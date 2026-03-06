@@ -1,0 +1,246 @@
+.card{
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius2);
+  padding: 16px;
+}
+
+.cardHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.grid{
+  display:grid;
+  gap: 12px;
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.grid3{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.row{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.spacer{ flex:1; }
+
+.kpi{
+  background: var(--panel2);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.kpi .label{ color: var(--muted); font-size: 13px; }
+.kpi .value{ font-size: 22px; font-weight: 750; margin-top: 4px; }
+
+@media (max-width: 900px){
+  .grid2{ grid-template-columns: 1fr; }
+  .grid3{ grid-template-columns: 1fr; }
+}
+
+.split{
+  display:grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 14px;
+  align-items:start;
+}
+
+@media (max-width: 980px){
+  .split{ grid-template-columns: 1fr; }
+}
+
+.modalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 16px;
+  z-index: 50;
+}
+
+.modal{
+  width: min(720px, 100%);
+  background: rgba(15,20,32,.92);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  box-shadow: 0 20px 70px rgba(0,0,0,.55);
+  backdrop-filter: blur(14px);
+  padding: 16px;
+}
+
+.iconBtn{
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.actionsCell{
+  white-space: nowrap;
+}
+
+.card{
+  padding: 18px;
+}
+
+input, select, textarea{
+  font-size: 16px;
+  padding: 12px 14px;
+}
+
+.btn{
+  font-size: 15px;
+  padding: 12px 14px;
+}
+
+.topbar{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: rgba(10,14,22,.72);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(12px);
+}
+
+.topbarInner{
+  width: min(1200px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 12px 0;
+  display:flex;
+  align-items:center;
+  gap: 14px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  min-width: 190px;
+}
+
+.brandDot{
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(124,92,255,1), rgba(33,212,253,1));
+  box-shadow: 0 0 0 4px rgba(124,92,255,.18);
+}
+
+.brandTitle{ font-weight: 850; line-height: 1; }
+.brandSub{ font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+.nav{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.navLink{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.86);
+}
+
+.navLink:hover{
+  background: rgba(255,255,255,.10);
+}
+
+.navLink.active{
+  border-color: rgba(124,92,255,.35);
+  background: rgba(124,92,255,.16);
+}
+
+.topbarRight{
+  margin-left: auto;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+/* ===== Topbar & layout responsive ===== */
+
+/* nav: su mobile meglio scroll orizzontale che wrap brutto */
+.nav{
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar{ display:none; }
+
+/* link più compatti su schermi piccoli */
+@media (max-width: 640px){
+  .topbarInner{
+    width: calc(100% - 24px);
+    padding: 10px 0;
+    gap: 10px;
+  }
+
+  .brand{
+    min-width: auto; /* prima era 190px */
+  }
+
+  .brandTitle{ font-size: 14px; }
+  .brandSub{ font-size: 11px; }
+
+  .navLink{
+    padding: 9px 10px;
+    border-radius: 11px;
+    white-space: nowrap;
+  }
+
+  /* righe/azioni: più stack e meno “compress” */
+  .row{
+    gap: 8px;
+  }
+
+  /* card più compatte */
+  .card{
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  /* split: già 1 colonna < 980, qui riduciamo gap */
+  .split{ gap: 10px; }
+}
+
+/* KPI: numeri più bilanciati su mobile */
+@media (max-width: 520px){
+  .kpi .value{
+    font-size: 20px;
+  }
+}
+
+/* ===== Mobile modal as bottom sheet ===== */
+@media (max-width: 520px){
+  .modalOverlay{
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .modal{
+    width: 100%;
+    border-radius: 18px 18px 14px 14px;
+    max-height: 82vh;
+    overflow: auto;
+  }
+}

@@ -1,0 +1,72 @@
+.tableWrap{
+  margin-top: 12px;
+  overflow:auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--stroke);
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 920px;
+  background: rgba(0,0,0,.14);
+}
+
+thead th{
+  text-align:left;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .02em;
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--stroke);
+  position: sticky;
+  top: 0;
+  background: rgba(10,14,22,.95);
+  backdrop-filter: blur(10px);
+}
+
+tbody td{
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  vertical-align: top;
+}
+
+tbody tr:hover{
+  background: rgba(255,255,255,.04);
+}
+
+td.note{
+  max-width: 360px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Tables responsive ===== */
+@media (max-width: 820px){
+  table{
+    min-width: 720px; /* prima 920px */
+  }
+}
+
+@media (max-width: 520px){
+  .tableWrap{
+    border-radius: 14px;
+  }
+
+  table{
+    min-width: 640px;
+  }
+
+  tbody td, thead th{
+    padding: 10px 10px;
+  }
+
+  /* su mobile spesso è meglio vedere più testo */
+  td.note{
+    max-width: 260px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: initial;
+  }
+}
