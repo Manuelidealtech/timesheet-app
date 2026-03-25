@@ -37,6 +37,7 @@ export default function AdminAnagrafiche() {
   const [employees, setEmployees] = useState([]);
   const [cdl, setCdl] = useState([]);
   const [lavorazioni, setLavorazioni] = useState([]);
+  const [cdlFilter, setCdlFilter] = useState("all");
 
   // create forms
   const [empName, setEmpName] = useState("");
@@ -61,7 +62,7 @@ export default function AdminAnagrafiche() {
     setErr("");
     const [e, c, l] = await Promise.all([
       supabase.from("employees").select("*").order("full_name"),
-      supabase.from("cdl").select("*").order("name"),
+      supabase.from("cdl").select("*").order("is_active", { ascending: false }).order("code", { ascending: true }),
       supabase.from("lavorazioni").select("*").order("name"),
     ]);
 
@@ -206,6 +207,35 @@ export default function AdminAnagrafiche() {
     await loadAll();
   }
 
+  const filteredCdl = cdl.filter((x) => {
+    if (cdlFilter === "active") return x.is_active === true;
+    if (cdlFilter === "inactive") return x.is_active === false;
+    return true;
+  });
+
+  function renderStatusBadge(isActive) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: 86,
+        padding: "8px 12px",
+        borderRadius: 999,
+        fontWeight: 700,
+        fontSize: 13,
+        letterSpacing: 0.2,
+        background: isActive ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.14)",
+        color: isActive ? "#86efac" : "#fca5a5",
+        border: isActive ? "1px solid rgba(34, 197, 94, 0.35)" : "1px solid rgba(239, 68, 68, 0.35)",
+      }}
+    >
+      {isActive ? "Attiva" : "Chiusa"}
+    </span>
+  );
+}
+
   return (
     <div className="container">
       <div className="cardHeader" style={{ marginBottom: 12 }}>
@@ -290,6 +320,26 @@ export default function AdminAnagrafiche() {
         {/* COMMESSE */}
         {tab === "cdl" && (
           <Section title="Commesse / CDL">
+            <div className="row" style={{ marginBottom: 14, gap: 8, flexWrap: "wrap" }}>
+              <button
+                className={`btn ${cdlFilter === "all" ? "btnPrimary" : ""}`}
+                onClick={() => setCdlFilter("all")}
+              >
+                Tutte
+              </button>
+              <button
+                className={`btn ${cdlFilter === "active" ? "btnPrimary" : ""}`}
+                onClick={() => setCdlFilter("active")}
+              >
+                Attive
+              </button>
+              <button
+                className={`btn ${cdlFilter === "inactive" ? "btnPrimary" : ""}`}
+                onClick={() => setCdlFilter("inactive")}
+              >
+                Chiuse
+              </button>
+            </div>
             <div className="grid3">
               <div className="formGroup">
                 <label>Codice (opzionale)</label>
@@ -316,19 +366,21 @@ export default function AdminAnagrafiche() {
                     <th>Codice</th>
                     <th>Nome</th>
                     <th>Cliente</th>
-                    <th>Attivo</th>
+                    <th>Stato</th>
+                    <th>Azioni stato</th>
                     <th className="actionsCell">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {cdl.map((x) => (
+                  {filteredCdl.map((x) => (
                     <tr key={x.id}>
                       <td>{x.code}</td>
                       <td>{x.name}</td>
                       <td>{x.client}</td>
+                      <td>{renderStatusBadge(x.is_active)}</td>
                       <td>
                         <button className="btn iconBtn" onClick={() => toggle("cdl", x)}>
-                          {x.is_active ? "Disattiva" : "Attiva"}
+                          {x.is_active ? "Disattiva" : "Riattiva"}
                         </button>
                       </td>
                       <td className="actionsCell">
@@ -338,7 +390,7 @@ export default function AdminAnagrafiche() {
                     </tr>
                   ))}
                   {!cdl.length && (
-                    <tr><td colSpan="5" style={{ textAlign: "center", opacity: .7, padding: 18 }}>Nessuna commessa</td></tr>
+                   <tr><td colSpan="6" style={{ textAlign: "center", opacity: .7, padding: 18 }}>Nessuna commessa</td></tr>
                   )}
                 </tbody>
               </table>

@@ -22,6 +22,17 @@ export async function fetchCdl() {
   return data;
 }
 
+export async function fetchAllCdl() {
+  const { data, error } = await supabase
+    .from("cdl")
+    .select("id, code, name, client, is_active")
+    .order("is_active", { ascending: false })
+    .order("code", { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
 export async function fetchLavorazioni() {
   const { data, error } = await supabase
     .from("lavorazioni")
