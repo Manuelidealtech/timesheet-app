@@ -1,0 +1,90 @@
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  cursor: pointer;
+  user-select:none;
+  transition: transform .06s ease, background .12s ease, border-color .12s ease;
+}
+
+.btn:hover{
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.22);
+}
+
+.btn:active{ transform: translateY(1px); }
+
+.btnPrimary{
+  background: linear-gradient(135deg, rgba(124,92,255,.9), rgba(33,212,253,.65));
+  border-color: rgba(124,92,255,.40);
+}
+
+.btnPrimary:hover{
+  background: linear-gradient(135deg, rgba(124,92,255,1), rgba(33,212,253,.8));
+}
+
+.btnDanger{
+  background: rgba(255,77,77,.10);
+  border-color: rgba(255,77,77,.25);
+}
+
+.btn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.iconBtn{
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 650;
+}
+
+.btnRed{
+  background: rgba(255,77,77,.12);
+  border-color: rgba(255,77,77,.28);
+}
+
+.btnRed:hover{
+  background: rgba(255,77,77,.18);
+  border-color: rgba(255,77,77,.38);
+}
+
+.btnIcon{
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.btnWarn{
+  background: rgba(255, 196, 0, .10);
+  border-color: rgba(255, 196, 0, .25);
+}
+.btnWarn:hover{
+  background: rgba(255, 196, 0, .16);
+}
+
+/* ===== Touch-friendly buttons ===== */
+.btn{
+  min-height: 44px; /* target touch consigliato */
+}
+
+/* utility: usa className="btn btnPrimary btnBlock" quando vuoi full width */
+.btnBlock{
+  width: 100%;
+}
+
+/* icone: target più grande su mobile */
+@media (max-width: 520px){
+  .btnIcon{
+    width: 44px;
+    height: 44px;
+  }
+}
