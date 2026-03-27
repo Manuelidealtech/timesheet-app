@@ -519,3 +519,27 @@ body{
     font-size: 18px;
   }
 }
+
+.timesheetRowClickable {
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.timesheetRowClickable:hover td {
+  background: rgba(88, 126, 255, 0.08);
+}
+
+.timesheetRowClickable:active td {
+  background: rgba(88, 126, 255, 0.12);
+}
+
+.actionsCell {
+  white-space: nowrap;
+}
+
+.note {
+  max-width: 340px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

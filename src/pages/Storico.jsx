@@ -43,25 +43,23 @@ export default function Storico() {
       fetchCdl(),
       fetchLavorazioni(),
     ]);
-    setEmployees(e);
-    setCdl(c);
-    setLavorazioni(l);
-    if (!employeeId && e?.[0]) setEmployeeId(String(e[0].id));
+
+    setEmployees(e || []);
+    setCdl(c || []);
+    setLavorazioni(l || []);
+
+    if (!employeeId && e?.[0]) {
+      setEmployeeId(String(e[0].id));
+    }
   }
 
   async function load() {
     setErr("");
     setOk("");
+
     try {
       setLoading(true);
-
-      // prendiamo base
       const data = await fetchTimesheets({ employeeId, from, to });
-
-      // arricchiamo: ci servono gli id di cdl/lavorazioni per modale (se non già presenti)
-      // (nel tuo fetchTimesheets attuale seleziona cdl(code,name) e lavorazioni(name).
-      // qui trasformiamo aggiungendo id con una chiamata più completa direttamente da supabase nel prossimo step,
-      // per ora facciamo safe: teniamo row come arriva.)
       setRows(data || []);
     } catch (e2) {
       console.error(e2);
@@ -107,8 +105,13 @@ export default function Storico() {
     [filteredRows]
   );
 
+  function openEdit(row) {
+    setEditRow(row);
+  }
+
   async function onDelete(row) {
     if (!isAdmin) return;
+
     const yes = window.confirm("Vuoi eliminare questo timesheet?");
     if (!yes) return;
 
@@ -131,7 +134,9 @@ export default function Storico() {
       setLoading(true);
       setErr("");
       setOk("");
+
       await updateTimesheet(editRow.id, patch);
+
       setOk("Modificato ✅");
       setEditRow(null);
       await load();
@@ -149,7 +154,12 @@ export default function Storico() {
       <div className="cardHeader" style={{ marginBottom: 12 }}>
         <div>
           <h1 className="h1">Storico Timesheet</h1>
-          <p className="sub">Filtra per dipendente e periodo, ricerca testo libera</p>
+          <p className="sub">
+            Filtra per dipendente e periodo, ricerca testo libera.
+            <span style={{ display: "block", marginTop: 4, opacity: 0.8 }}>
+              Clicca su una riga per modificarla.
+            </span>
+          </p>
         </div>
         <span className="badge">Storico</span>
       </div>
@@ -160,7 +170,9 @@ export default function Storico() {
             <label>Dipendente</label>
             <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
               {employees.map((x) => (
-                <option key={x.id} value={x.id}>{x.full_name}</option>
+                <option key={x.id} value={x.id}>
+                  {x.full_name}
+                </option>
               ))}
             </select>
           </div>
@@ -177,7 +189,11 @@ export default function Storico() {
 
           <div className="formGroup" style={{ minWidth: 260 }}>
             <label>Ricerca</label>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="commessa, lavorazione, note..." />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="commessa, lavorazione, note..."
+            />
           </div>
 
           <button className="btn btnPrimary" onClick={load} disabled={loading}>
@@ -208,21 +224,42 @@ export default function Storico() {
                 {isAdmin && <th className="actionsCell">Azioni</th>}
               </tr>
             </thead>
+
             <tbody>
               {filteredRows.map((r) => (
-                <tr key={r.id}>
+                <tr
+                  key={r.id}
+                  className="timesheetRowClickable"
+                  onClick={() => openEdit(r)}
+                  title="Clicca per modificare"
+                >
                   <td>{r.work_date}</td>
                   <td>{String(r.start_time).slice(0, 5)}</td>
                   <td>{String(r.end_time).slice(0, 5)}</td>
                   <td>{fmtMinutes(r.minutes || 0)}</td>
-                  <td>{(r.cdl?.code ? `${r.cdl.code} — ` : "")}{r.cdl?.name}</td>
+                  <td>
+                    {(r.cdl?.code ? `${r.cdl.code} — ` : "")}
+                    {r.cdl?.name}
+                  </td>
                   <td>{r.lavorazioni?.name}</td>
-                  <td className="note" title={r.note || ""}>{r.note}</td>
+                  <td className="note" title={r.note || ""}>
+                    {r.note}
+                  </td>
 
                   {isAdmin && (
-                    <td className="actionsCell">
-                      <button className="btn iconBtn" onClick={() => setEditRow(r)}>Modifica</button>
-                      <button className="btn btnDanger iconBtn" onClick={() => onDelete(r)}>Elimina</button>
+                    <td
+                      className="actionsCell"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button className="btn iconBtn" onClick={() => openEdit(r)}>
+                        Modifica
+                      </button>
+                      <button
+                        className="btn btnDanger iconBtn"
+                        onClick={() => onDelete(r)}
+                      >
+                        Elimina
+                      </button>
                     </td>
                   )}
                 </tr>
@@ -230,7 +267,10 @@ export default function Storico() {
 
               {!filteredRows.length && !loading && (
                 <tr>
-                  <td colSpan={isAdmin ? 8 : 7} style={{ textAlign: "center", opacity: 0.7, padding: 18 }}>
+                  <td
+                    colSpan={isAdmin ? 8 : 7}
+                    style={{ textAlign: "center", opacity: 0.7, padding: 18 }}
+                  >
                     Nessun record nel periodo / filtro selezionato.
                   </td>
                 </tr>

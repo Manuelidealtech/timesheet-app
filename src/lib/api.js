@@ -60,14 +60,17 @@ export async function fetchTimesheets({ employeeId, from, to }) {
     .from("timesheets")
     .select(`
       id,
+      employee_id,
       work_date,
       start_time,
       end_time,
       minutes,
       note,
+      cdl_id,
+      lavorazione_id,
       employees(full_name),
-      cdl(code, name),
-      lavorazioni(name)
+      cdl(id, code, name),
+      lavorazioni(id, name)
     `)
     .order("work_date", { ascending: false })
     .order("start_time", { ascending: false });
@@ -86,14 +89,17 @@ export async function fetchTimesheetsLatest({ employeeId, limit = 10 }) {
     .from("timesheets")
     .select(`
       id,
+      employee_id,
       work_date,
       start_time,
       end_time,
       minutes,
       note,
+      cdl_id,
+      lavorazione_id,
       employees(full_name),
-      cdl(code, name),
-      lavorazioni(name)
+      cdl(id, code, name),
+      lavorazioni(id, name)
     `)
     .order("work_date", { ascending: false })
     .order("start_time", { ascending: false })
@@ -113,14 +119,17 @@ export async function updateTimesheet(id, patch) {
     .eq("id", id)
     .select(`
       id,
+      employee_id,
       work_date,
       start_time,
       end_time,
       minutes,
       note,
+      cdl_id,
+      lavorazione_id,
       employees(full_name),
-      cdl(code, name),
-      lavorazioni(name)
+      cdl(id, code, name),
+      lavorazioni(id, name)
     `)
     .single();
 
