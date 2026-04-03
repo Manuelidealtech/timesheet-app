@@ -3,40 +3,72 @@
   align-items:center;
   justify-content:center;
   gap:8px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.08);
+  min-height: 46px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
   color: var(--text);
   cursor: pointer;
   user-select:none;
-  transition: transform .06s ease, background .12s ease, border-color .12s ease;
+  transition:
+    transform .08s ease,
+    background .16s ease,
+    border-color .16s ease,
+    box-shadow .16s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.03),
+    0 8px 18px rgba(0,0,0,.10);
 }
 
 .btn:hover{
-  background: rgba(255,255,255,.12);
-  border-color: rgba(255,255,255,.22);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,.06));
+  border-color: rgba(255,255,255,.16);
 }
 
-.btn:active{ transform: translateY(1px); }
+.btn:active{
+  transform: translateY(1px);
+}
 
 .btnPrimary{
-  background: linear-gradient(135deg, rgba(124,92,255,.9), rgba(33,212,253,.65));
-  border-color: rgba(124,92,255,.40);
+  background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(33,212,253,.72));
+  border-color: rgba(124,92,255,.28);
+  color: #fff;
 }
 
 .btnPrimary:hover{
-  background: linear-gradient(135deg, rgba(124,92,255,1), rgba(33,212,253,.8));
+  background: linear-gradient(135deg, rgba(124,92,255,1), rgba(33,212,253,.82));
+  border-color: rgba(124,92,255,.40);
 }
 
-.btnDanger{
-  background: rgba(255,77,77,.10);
-  border-color: rgba(255,77,77,.25);
+.btnDanger,
+.btnRed{
+  background: linear-gradient(180deg, rgba(255,77,77,.14), rgba(255,77,77,.08));
+  border-color: rgba(255,77,77,.24);
+  color: #ffe8e8;
+}
+
+.btnDanger:hover,
+.btnRed:hover{
+  background: linear-gradient(180deg, rgba(255,77,77,.18), rgba(255,77,77,.10));
+  border-color: rgba(255,77,77,.34);
+}
+
+.btnWarn{
+  background: linear-gradient(180deg, rgba(255,196,0,.14), rgba(255,196,0,.08));
+  border-color: rgba(255,196,0,.24);
+}
+
+.btnWarn:hover{
+  background: linear-gradient(180deg, rgba(255,196,0,.18), rgba(255,196,0,.11));
 }
 
 .btn:disabled{
   opacity: .55;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .iconBtn{
@@ -45,43 +77,18 @@
   font-weight: 650;
 }
 
-.btnRed{
-  background: rgba(255,77,77,.12);
-  border-color: rgba(255,77,77,.28);
-}
-
-.btnRed:hover{
-  background: rgba(255,77,77,.18);
-  border-color: rgba(255,77,77,.38);
-}
-
 .btnIcon{
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   padding: 0;
-  border-radius: 12px;
+  border-radius: 13px;
   font-weight: 800;
 }
 
-.btnWarn{
-  background: rgba(255, 196, 0, .10);
-  border-color: rgba(255, 196, 0, .25);
-}
-.btnWarn:hover{
-  background: rgba(255, 196, 0, .16);
-}
-
-/* ===== Touch-friendly buttons ===== */
-.btn{
-  min-height: 44px; /* target touch consigliato */
-}
-
-/* utility: usa className="btn btnPrimary btnBlock" quando vuoi full width */
 .btnBlock{
   width: 100%;
 }
 
-/* icone: target più grande su mobile */
 @media (max-width: 520px){
   .btnIcon{
     width: 44px;

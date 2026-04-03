@@ -115,7 +115,7 @@ export default function AdminRiassunti() {
   const totalCost = useMemo(() => rows.reduce((a,r)=>a+((r.minutes||0)/60)*(Number(r.employees?.hourly_cost||0)),0), [rows]);
 
   return (
-    <div className="container">
+    <div>
       <div className="cardHeader" style={{ marginBottom: 12 }}>
         <div>
           <h1 className="h1">Admin — Riassunti</h1>

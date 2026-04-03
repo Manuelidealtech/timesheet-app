@@ -1,0 +1,174 @@
+.appShell{
+  min-height: 100vh;
+}
+
+.sidebar{
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 260px;
+  background:
+    linear-gradient(180deg, rgba(9,13,22,.92), rgba(7,11,18,.88));
+  border-right: 1px solid rgba(255,255,255,.07);
+  backdrop-filter: blur(18px);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 80;
+  box-shadow: 10px 0 40px rgba(0,0,0,.18);
+}
+
+.appMain{
+  min-height: 100vh;
+  padding-left: 260px;
+}
+
+.sidebarBrand{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  padding: 8px 8px 2px;
+}
+
+.sidebarTitle{
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.sidebarSub{
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.sidebarUserCard{
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.03),
+    0 12px 24px rgba(0,0,0,.12);
+}
+
+.sidebarUserLabel{
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.sidebarUserName{
+  font-size: 15px;
+  font-weight: 750;
+  margin-top: 8px;
+}
+
+.sidebarUserRole{
+  margin-top: 8px;
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(124,92,255,.14);
+  border: 1px solid rgba(124,92,255,.24);
+  font-size: 12px;
+}
+
+.sidebarNav{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.sidebarLink{
+  display:flex;
+  align-items:center;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.03);
+  color: rgba(255,255,255,.88);
+  transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.sidebarLink:hover{
+  transform: translateX(2px);
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+}
+
+.sidebarLink.active{
+  border-color: rgba(124,92,255,.28);
+  background:
+    linear-gradient(135deg, rgba(124,92,255,.16), rgba(33,212,253,.08));
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+
+.sidebarFooter{
+  margin-top: auto;
+}
+
+.sidebarLogout{
+  width: 100%;
+  justify-content: center;
+}
+
+.sidebarToggle,
+.sidebarBackdrop{
+  display:none;
+}
+
+.container{
+  width: min(1440px, calc(100% - 48px));
+  margin: 26px auto 30px;
+}
+
+@media (max-width: 960px){
+  .sidebarToggle{
+    display:flex;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 95;
+    width: 46px;
+    height: 46px;
+    align-items:center;
+    justify-content:center;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(9,13,21,.88);
+    color: #fff;
+    backdrop-filter: blur(10px);
+  }
+
+  .sidebar{
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+  }
+
+  .sidebar.open{
+    transform: translateX(0);
+  }
+
+  .sidebarBackdrop{
+    display:block;
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: rgba(0,0,0,.5);
+    border: 0;
+  }
+
+  .appMain{
+    padding-left: 0;
+  }
+
+  .container{
+    width: calc(100% - 24px);
+    margin: 72px auto 20px;
+  }
+}

@@ -145,3 +145,246 @@ export async function deleteTimesheet(id) {
 
   if (error) throw error;
 }
+
+/* =========================
+   FOGLI INTERVENTO
+========================= */
+
+function mapWorkRowsForDb(workRows = []) {
+  return workRows
+    .filter((row) => Object.values(row || {}).some(Boolean))
+    .map((row) => ({
+      work_date: row.date || null,
+      travel_from: row.travel_from || "",
+      travel_to: row.travel_to || "",
+      work_from: row.work_from || "",
+      work_to: row.work_to || "",
+      quantity: row.quantity || null,
+      code: row.code || "",
+      description: row.description || "",
+    }));
+}
+
+function mapMachinesForDb(machines = []) {
+  return machines
+    .filter((machine) => Object.values(machine || {}).some(Boolean))
+    .map((machine) => ({
+      model: machine.model || "",
+      serial_number: machine.serial_number || "",
+    }));
+}
+
+function extractReportFields(payload) {
+  return {
+    report_number: payload.report_number || null,
+    report_date: payload.report_date || null,
+    client_name: payload.client_name || "",
+    city: payload.city || "",
+    travel_meals: payload.travel_meals || "",
+    car_km: payload.car_km || "",
+    tolls: payload.tolls || "",
+    overnight_stays: payload.overnight_stays || "",
+    machine_order_number: payload.machine_order_number || "",
+    tested_on: payload.tested_on || null,
+    tested_with_positive_result:
+      payload.tested_with_positive_result === true,
+    technician_signature: payload.technician_signature || "",
+    client_signature: payload.client_signature || "",
+    notes: payload.notes || "",
+    pdf_sent_at: payload.pdf_sent_at || null,
+    pdf_file_name: payload.pdf_file_name || null,
+  };
+}
+
+function mapReportFromDb(report) {
+  return {
+    ...report,
+    work_rows: (report.intervention_report_items || []).map((row) => ({
+      id: row.id,
+      date: row.work_date || "",
+      travel_from: row.travel_from || "",
+      travel_to: row.travel_to || "",
+      work_from: row.work_from || "",
+      work_to: row.work_to || "",
+      quantity: row.quantity || "",
+      code: row.code || "",
+      description: row.description || "",
+    })),
+    machines: (report.intervention_report_machines || []).map((machine) => ({
+      id: machine.id,
+      model: machine.model || "",
+      serial_number: machine.serial_number || "",
+    })),
+  };
+}
+
+async function fetchSingleInterventionReport(id) {
+  const { data, error } = await supabase
+    .from("intervention_reports")
+    .select(`
+      *,
+      intervention_report_items (
+        id,
+        report_id,
+        work_date,
+        travel_from,
+        travel_to,
+        work_from,
+        work_to,
+        quantity,
+        code,
+        description
+      ),
+      intervention_report_machines (
+        id,
+        report_id,
+        model,
+        serial_number
+      )
+    `)
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  return mapReportFromDb(data);
+}
+
+export async function fetchInterventionReports() {
+  const { data, error } = await supabase
+    .from("intervention_reports")
+    .select(`
+      *,
+      intervention_report_items (
+        id,
+        report_id,
+        work_date,
+        travel_from,
+        travel_to,
+        work_from,
+        work_to,
+        quantity,
+        code,
+        description
+      ),
+      intervention_report_machines (
+        id,
+        report_id,
+        model,
+        serial_number
+      )
+    `)
+    .order("report_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(mapReportFromDb);
+}
+
+export async function createInterventionReport(payload) {
+  const reportFields = extractReportFields(payload);
+
+  const { data: report, error: reportError } = await supabase
+    .from("intervention_reports")
+    .insert([reportFields])
+    .select("*")
+    .single();
+
+  if (reportError) throw reportError;
+
+  const workRows = mapWorkRowsForDb(payload.work_rows).map((row) => ({
+    ...row,
+    report_id: report.id,
+  }));
+
+  const machines = mapMachinesForDb(payload.machines).map((machine) => ({
+    ...machine,
+    report_id: report.id,
+  }));
+
+  if (workRows.length) {
+    const { error: itemsError } = await supabase
+      .from("intervention_report_items")
+      .insert(workRows);
+
+    if (itemsError) throw itemsError;
+  }
+
+  if (machines.length) {
+    const { error: machinesError } = await supabase
+      .from("intervention_report_machines")
+      .insert(machines);
+
+    if (machinesError) throw machinesError;
+  }
+
+  return await fetchSingleInterventionReport(report.id);
+}
+
+export async function updateInterventionReport(id, patch) {
+  const reportFields = extractReportFields(patch);
+
+  const { error: reportError } = await supabase
+    .from("intervention_reports")
+    .update(reportFields)
+    .eq("id", id);
+
+  if (reportError) throw reportError;
+
+  const { error: deleteItemsError } = await supabase
+    .from("intervention_report_items")
+    .delete()
+    .eq("report_id", id);
+
+  if (deleteItemsError) throw deleteItemsError;
+
+  const { error: deleteMachinesError } = await supabase
+    .from("intervention_report_machines")
+    .delete()
+    .eq("report_id", id);
+
+  if (deleteMachinesError) throw deleteMachinesError;
+
+  const workRows = mapWorkRowsForDb(patch.work_rows).map((row) => ({
+    ...row,
+    report_id: id,
+  }));
+
+  const machines = mapMachinesForDb(patch.machines).map((machine) => ({
+    ...machine,
+    report_id: id,
+  }));
+
+  if (workRows.length) {
+    const { error: itemsError } = await supabase
+      .from("intervention_report_items")
+      .insert(workRows);
+
+    if (itemsError) throw itemsError;
+  }
+
+  if (machines.length) {
+    const { error: machinesError } = await supabase
+      .from("intervention_report_machines")
+      .insert(machines);
+
+    if (machinesError) throw machinesError;
+  }
+
+  return await fetchSingleInterventionReport(id);
+}
+
+export async function deleteInterventionReport(id) {
+  const { error } = await supabase
+    .from("intervention_reports")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function fetchNextInterventionReportNumber() {
+  const { data, error } = await supabase.rpc("generate_intervention_report_number");
+
+  if (error) throw error;
+  return data;
+}

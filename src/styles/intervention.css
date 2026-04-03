@@ -1,0 +1,298 @@
+.interventionPage {
+  width: 100%;
+  max-width: none;
+  margin: 88px 0 28px;
+  padding: 0 20px 24px 20px;
+  box-sizing: border-box;
+}
+
+.interventionLayout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+.interventionHistoryCard,
+.interventionFormCard {
+  min-width: 0;
+  min-height: 220px;
+}
+
+.interventionFormCard {
+  width: 100%;
+  overflow: hidden;
+}
+
+.interventionHistoryList {
+  display: grid;
+  gap: 10px;
+}
+
+.interventionHistoryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.interventionHistoryItem.active {
+  border-color: rgba(124, 92, 255, 0.35);
+  background: rgba(124, 92, 255, 0.14);
+}
+
+.interventionHistoryMain {
+  all: unset;
+  display: block;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.interventionDeleteBtn {
+  width: 100%;
+}
+
+.interventionHistoryTop,
+.interventionHistoryMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.interventionHistoryClient {
+  font-weight: 700;
+  margin: 8px 0 6px;
+}
+
+.interventionHistoryMeta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.formSection {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 16px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.formSectionTitle {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.interventionGridTop {
+  align-items: end;
+}
+
+.interventionSectionHead {
+  margin-bottom: 12px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.machineCard {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  box-sizing: border-box;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkboxLabel input {
+  width: 18px;
+  height: 18px;
+}
+
+.interventionActions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.interventionRowsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.interventionRowCard {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.interventionRowGrid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns:
+    minmax(145px, 160px) minmax(95px, 110px) minmax(95px, 110px) minmax(95px, 110px) minmax(95px, 110px) minmax(80px, 95px) minmax(120px, 160px) minmax(260px, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.interventionRowGrid>* {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.interventionRowGrid input,
+.interventionRowGrid select,
+.interventionRowGrid textarea {
+  text-align: left;
+}
+
+.interventionRowActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.interventionRowActions .btn {
+  min-width: 110px;
+}
+
+.col-date,
+.col-time,
+.col-qty,
+.col-code,
+.col-description {
+  min-width: 0;
+  width: 100%;
+}
+
+.col-time,
+.col-qty {
+  text-align: left;
+}
+
+@media (min-width: 1600px) {
+  .interventionPage {
+    max-width: 1860px;
+  }
+
+  .interventionLayout {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .interventionRowGrid {
+    grid-template-columns:
+      minmax(150px, 170px) minmax(100px, 115px) minmax(100px, 115px) minmax(100px, 115px) minmax(100px, 115px) minmax(85px, 100px) minmax(140px, 180px) minmax(320px, 1fr);
+  }
+}
+
+@media (max-width: 1500px) {
+  .interventionRowGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .interventionLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .grid3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .interventionRowGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid2,
+  .grid3 {
+    grid-template-columns: 1fr;
+  }
+
+  .interventionRowActions .btn,
+  .interventionDeleteBtn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .interventionPage {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .interventionRowGrid,
+  .interventionGridTop {
+    grid-template-columns: 1fr;
+  }
+
+  .interventionHistoryTop,
+  .interventionHistoryMeta {
+    flex-direction: column;
+  }
+
+  .interventionActions .btn {
+    width: 100%;
+  }
+}
+
+.container.interventionPage {
+  max-width: none !important;
+}
+
+.interventionPage .card,
+.interventionPage .formSection {
+  max-width: 100%;
+}
+
+.interventionPage {
+  width: 100%;
+  max-width: none;
+  margin: 88px 0 28px;
+  padding: 0 20px 24px;
+  box-sizing: border-box;
+}
+
+.interventionLayout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}

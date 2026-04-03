@@ -237,7 +237,7 @@ export default function AdminAnagrafiche() {
 }
 
   return (
-    <div className="container">
+    <div>
       <div className="cardHeader" style={{ marginBottom: 12 }}>
         <div>
           <h1 className="h1">Admin — Anagrafiche</h1>

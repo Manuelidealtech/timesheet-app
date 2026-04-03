@@ -1,12 +1,13 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import Topbar from "./components/Topbar";
+import Sidebar from "./components/Sidebar";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Produzione from "./pages/Produzione";
 import Storico from "./pages/Storico";
 import RequireRole from "./auth/RequireRole";
+import Interventi from "./pages/Interventi";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTimesheets from "./pages/admin/AdminTimesheets";
@@ -15,9 +16,7 @@ import AdminAnagrafiche from "./pages/admin/AdminAnagrafiche";
 
 export default function App() {
   return (
-    <>
-      <Topbar />
-
+    <Sidebar>
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -83,7 +82,15 @@ export default function App() {
             </RequireRole>
           }
         />
+        <Route
+          path="/interventi"
+          element={
+            <RequireRole allow={["produzione", "admin"]}>
+              <Interventi />
+            </RequireRole>
+          }
+        />
       </Routes>
-    </>
+    </Sidebar>
   );
 }

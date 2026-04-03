@@ -2,6 +2,8 @@
 @import "./forms.css";
 @import "./table.css";
 @import "./buttons.css";
+@import "./sidebar.css";
+@import "./intervention.css";
 
 :root{
   --bg: #0b0f17;

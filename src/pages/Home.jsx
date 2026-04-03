@@ -168,7 +168,7 @@ export default function Home() {
   }
 
   return (
-    <div className="container">
+    <div>
       <div className="card homeCard">
         <div className="cardHeader">
           <div>
@@ -194,19 +194,6 @@ export default function Home() {
             </>
           )}
 
-          {role === "admin" && (
-            <>
-              <Link className="btn btnPrimary" to="/admin">
-                Dashboard
-              </Link>
-              <Link className="btn" to="/admin/timesheets">
-                Tutti i Timesheet
-              </Link>
-              <Link className="btn" to="/admin/riassunti">
-                Riassunti
-              </Link>
-            </>
-          )}
         </div>
 
         <section className="dailyReport">
