@@ -131,7 +131,7 @@
   .sidebarToggle{
     display:flex;
     position: fixed;
-    top: 14px;
+    top: 18px;
     left: 14px;
     z-index: 95;
     width: 46px;
@@ -146,6 +146,7 @@
   }
 
   .sidebar{
+    padding: 76px 14px 18px;
     transform: translateX(-100%);
     transition: transform .22s ease;
   }
@@ -169,6 +170,6 @@
 
   .container{
     width: calc(100% - 24px);
-    margin: 72px auto 20px;
+    margin: 88px auto 20px;
   }
 }

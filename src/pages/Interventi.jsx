@@ -130,19 +130,19 @@ export default function Interventi() {
   );
 
   useEffect(() => {
-  loadReports();
-  initNewForm();
-}, []);
+    loadReports();
+    initNewForm();
+  }, []);
 
-async function initNewForm() {
-  try {
-    const nextForm = await buildNewForm();
-    setForm(nextForm);
-  } catch (e) {
-    console.error(e);
-    setErr("Errore generazione numero foglio");
+  async function initNewForm() {
+    try {
+      const nextForm = await buildNewForm();
+      setForm(nextForm);
+    } catch (e) {
+      console.error(e);
+      setErr("Errore generazione numero foglio");
+    }
   }
-}
 
   useEffect(() => {
     if (selectedReport) {
@@ -686,15 +686,18 @@ async function initNewForm() {
             </div>
 
             <div className="formSection">
-              <div className="formSectionTitle">Collaudo e firme</div>
+
 
               <div className="formSection">
                 <div className="formSectionTitle">Collaudo e firme</div>
 
                 <div className="formGroup">
-                  <label className="checkboxLabel">
+                  <label className="iosSwitchRow">
+                    <span className="iosSwitchText">Macchina collaudata</span>
+
                     <input
                       type="checkbox"
+                      className="iosSwitchInput"
                       checked={!!form.tested}
                       onChange={(e) => {
                         const checked = e.target.checked;
@@ -710,7 +713,8 @@ async function initNewForm() {
                         }));
                       }}
                     />
-                    Macchina collaudata
+
+                    <span className="iosSwitchSlider" />
                   </label>
                 </div>
 
