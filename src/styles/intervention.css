@@ -600,3 +600,43 @@
     transform: translateX(20px);
   }
 }
+
+.interventionSectionActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.interventionRowCardHead {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+.interventionRowCard--return {
+  border-color: rgba(33, 212, 253, 0.26);
+  background: rgba(33, 212, 253, 0.06);
+}
+
+.badgeReturn {
+  background: rgba(33, 212, 253, 0.16);
+  border: 1px solid rgba(33, 212, 253, 0.28);
+  color: var(--text);
+}
+
+.interventionRowCard--return input[disabled] {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .interventionSectionActions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .interventionSectionActions .btn {
+    width: 100%;
+  }
+}

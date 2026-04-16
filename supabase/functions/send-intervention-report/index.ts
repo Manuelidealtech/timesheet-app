@@ -348,7 +348,7 @@ serve(async (req) => {
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const reportRecipient =
-      Deno.env.get("REPORT_RECIPIENT") || "lucia.bisceglia@idealtech.it";
+      Deno.env.get("REPORT_RECIPIENT") || "manuel@idealtech.it";
     const mailFrom = Deno.env.get("MAIL_FROM");
 
     if (!resendApiKey) {

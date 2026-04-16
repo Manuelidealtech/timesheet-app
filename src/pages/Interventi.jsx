@@ -11,6 +11,7 @@ import {
 import { buildInterventionPdf, downloadInterventionPdf } from "../utils/interventionPdf";
 
 const emptyWorkRow = () => ({
+  row_type: "work",
   date: dayjs().format("YYYY-MM-DD"),
   travel_from: "",
   travel_to: "",
@@ -19,6 +20,16 @@ const emptyWorkRow = () => ({
   quantity: "",
   code: "",
   description: "",
+});
+
+const emptyReturnRow = () => ({
+  ...emptyWorkRow(),
+  row_type: "return",
+  work_from: "",
+  work_to: "",
+  quantity: "",
+  code: "",
+  description: "Rientro",
 });
 
 const emptyMachine = () => ({
@@ -79,6 +90,7 @@ function normalizeReport(payload = {}) {
       (payload?.work_rows || []).map((row) => ({
         ...emptyWorkRow(),
         ...row,
+        row_type: row?.row_type === "return" ? "return" : "work",
         date: row?.date || row?.work_date || dayjs().format("YYYY-MM-DD"),
       }))
     ),
@@ -109,7 +121,18 @@ function buildPayloadForDb(form) {
     tested_with_positive_result: isTested ? form.tested_result === "Positivo" : false,
     technician_signature: form.technician_signature || "",
     client_signature: form.client_signature || "",
-    work_rows: (form.work_rows || []).filter((row) => Object.values(row).some(Boolean)),
+    work_rows: (form.work_rows || [])
+      .map((row) => {
+        const isReturn = row?.row_type === "return";
+
+        return {
+          ...row,
+          row_type: isReturn ? "return" : "work",
+          work_from: isReturn ? "" : row?.work_from || "",
+          work_to: isReturn ? "" : row?.work_to || "",
+        };
+      })
+      .filter((row) => Object.values(row).some(Boolean)),
     machines: (form.machines || []).filter((machine) => Object.values(machine).some(Boolean)),
   };
 }
@@ -171,9 +194,18 @@ export default function Interventi() {
   function handleWorkRow(index, field, value) {
     setForm((prev) => ({
       ...prev,
-      work_rows: prev.work_rows.map((row, rowIndex) =>
-        rowIndex === index ? { ...row, [field]: value } : row
-      ),
+      work_rows: prev.work_rows.map((row, rowIndex) => {
+        if (rowIndex !== index) return row;
+
+        const nextRow = { ...row, [field]: value };
+
+        if ((field === "row_type" && value === "return") || nextRow.row_type === "return") {
+          nextRow.work_from = "";
+          nextRow.work_to = "";
+        }
+
+        return nextRow;
+      }),
     }));
   }
 
@@ -190,6 +222,13 @@ export default function Interventi() {
     setForm((prev) => ({
       ...prev,
       work_rows: [...(Array.isArray(prev.work_rows) ? prev.work_rows : []), emptyWorkRow()],
+    }));
+  }
+
+  function addReturnRow() {
+    setForm((prev) => ({
+      ...prev,
+      work_rows: [...(Array.isArray(prev.work_rows) ? prev.work_rows : []), emptyReturnRow()],
     }));
   }
 
@@ -323,49 +362,59 @@ export default function Interventi() {
       setErr("");
       setOk("");
 
-      const doc = await buildInterventionPdf(source);
-      const pdfBase64 = doc.output("datauristring").split(",")[1];
-      const fileName = `foglio-intervento-${source.report_number}.pdf`;
+      const payload = {
+        report_number: source.report_number,
+        report_date: source.report_date,
+        client_name: source.client_name,
+        city: source.city,
+        travel_meals: source.travel_meals,
+        car_km: source.car_km,
+        tolls: source.tolls,
+        overnight_stays: source.overnight_stays,
+        machine_order_number: source.machine_order_number,
+        tested_on: source.tested_on,
+        tested_with_positive_result: source.tested_result === "Positivo",
+        technician_signature: source.technician_signature,
+        client_signature: source.client_signature,
+        notes: source.notes,
+        items: source.work_rows.map((row) => ({
+          row_type: row?.row_type === "return" ? "return" : "work",
+          work_date: row.date,
+          travel_from: row.travel_from,
+          travel_to: row.travel_to,
+          work_from: row?.row_type === "return" ? "" : row.work_from,
+          work_to: row?.row_type === "return" ? "" : row.work_to,
+          quantity: row.quantity,
+          code: row.code,
+          description: row.description,
+        })),
+        machines: source.machines,
+      };
+
+      console.log("SEND EMAIL PAYLOAD SIZE:", JSON.stringify(payload).length);
+      console.log("SEND EMAIL PAYLOAD:", payload);
 
       const { data, error } = await supabase.functions.invoke("send-intervention-report", {
-        body: {
-          report_number: source.report_number,
-          report_date: source.report_date,
-          client_name: source.client_name,
-          city: source.city,
-          travel_meals: source.travel_meals,
-          car_km: source.car_km,
-          tolls: source.tolls,
-          overnight_stays: source.overnight_stays,
-          machine_order_number: source.machine_order_number,
-          tested_on: source.tested_on,
-          tested_with_positive_result: source.tested_result === "Positivo",
-          technician_signature: source.technician_signature,
-          client_signature: source.client_signature,
-          notes: source.notes,
-          items: source.work_rows.map((row) => ({
-            work_date: row.date,
-            travel_from: row.travel_from,
-            travel_to: row.travel_to,
-            work_from: row.work_from,
-            work_to: row.work_to,
-            quantity: row.quantity,
-            code: row.code,
-            description: row.description,
-          })),
-          machines: source.machines,
-          fileName,
-          pdfBase64,
-        },
+        body: payload,
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      console.log("send-intervention-report data:", data);
+      console.log("send-intervention-report error:", error);
+
+      if (error) {
+        throw new Error(error.message || "Errore funzione Supabase");
+      }
+
+      if (data?.error) {
+        throw new Error(
+          typeof data.error === "string" ? data.error : JSON.stringify(data.error)
+        );
+      }
 
       if (source.id) {
         await updateInterventionReport(source.id, {
           pdf_sent_at: new Date().toISOString(),
-          pdf_file_name: fileName,
+          pdf_file_name: `foglio-intervento-${source.report_number}.pdf`,
         });
         await loadReports();
       }
@@ -559,14 +608,28 @@ export default function Interventi() {
                 <div className="formSectionTitle">Righe lavoro / ricambi</div>
                 <div className="sub">Replica digitale della tabella presente nel modulo PDF.</div>
               </div>
-              <button type="button" className="btn" onClick={addWorkRow}>
-                Aggiungi riga
-              </button>
+              <div className="interventionSectionActions">
+                <button type="button" className="btn" onClick={addWorkRow}>
+                  Aggiungi riga
+                </button>
+                <button type="button" className="btn btnPrimary" onClick={addReturnRow}>
+                  Aggiungi ritorno
+                </button>
+              </div>
             </div>
 
             <div className="interventionRowsTable">
-              {ensureMinWorkRows(form.work_rows).map((row, index) => (
-                <div key={index} className="interventionRowCard">
+              {ensureMinWorkRows(form.work_rows).map((row, index) => {
+                const isReturnRow = row?.row_type === "return";
+
+                return (
+                <div key={index} className={`interventionRowCard ${isReturnRow ? "interventionRowCard--return" : ""}`}>
+                  <div className="interventionRowCardHead">
+                    <span className={`badge ${isReturnRow ? "badgeReturn" : ""}`}>
+                      {isReturnRow ? "Ritorno" : "Lavoro / ricambi"}
+                    </span>
+                  </div>
+
                   <div className="interventionRowGrid">
                     <input
                       className="col-date"
@@ -590,13 +653,17 @@ export default function Interventi() {
                       className="col-time"
                       value={row.work_from || ""}
                       onChange={(e) => handleWorkRow(index, "work_from", e.target.value)}
-                      placeholder="Lavoro dalle"
+                      placeholder={isReturnRow ? "Non richiesto per ritorno" : "Lavoro dalle"}
+                      disabled={isReturnRow}
+                      readOnly={isReturnRow}
                     />
                     <input
                       className="col-time"
                       value={row.work_to || ""}
                       onChange={(e) => handleWorkRow(index, "work_to", e.target.value)}
-                      placeholder="Lavoro alle"
+                      placeholder={isReturnRow ? "Non richiesto per ritorno" : "Lavoro alle"}
+                      disabled={isReturnRow}
+                      readOnly={isReturnRow}
                     />
                     <input
                       className="col-qty"
@@ -628,7 +695,8 @@ export default function Interventi() {
                     </button>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
 
