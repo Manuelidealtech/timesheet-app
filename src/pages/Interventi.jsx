@@ -105,6 +105,10 @@ function normalizeReport(payload = {}) {
 
 function buildPayloadForDb(form) {
   const isTested = !!form.tested;
+  const normalizeTime = (value) => {
+    const trimmed = String(value || "").trim();
+    return trimmed ? trimmed : null;
+  };
 
   return {
     report_number: form.report_number || null,
@@ -128,11 +132,27 @@ function buildPayloadForDb(form) {
         return {
           ...row,
           row_type: isReturn ? "return" : "work",
-          work_from: isReturn ? "" : row?.work_from || "",
-          work_to: isReturn ? "" : row?.work_to || "",
+          travel_from: normalizeTime(row?.travel_from),
+          travel_to: normalizeTime(row?.travel_to),
+          work_from: isReturn ? null : normalizeTime(row?.work_from),
+          work_to: isReturn ? null : normalizeTime(row?.work_to),
+          quantity: row?.quantity || "",
+          code: row?.code || "",
+          description: row?.description || "",
         };
       })
-      .filter((row) => Object.values(row).some(Boolean)),
+      .filter((row) =>
+        Boolean(
+          row.date ||
+            row.travel_from ||
+            row.travel_to ||
+            row.work_from ||
+            row.work_to ||
+            row.quantity ||
+            row.code ||
+            row.description
+        )
+      ),
     machines: (form.machines || []).filter((machine) => Object.values(machine).some(Boolean)),
   };
 }
@@ -380,10 +400,10 @@ export default function Interventi() {
         items: source.work_rows.map((row) => ({
           row_type: row?.row_type === "return" ? "return" : "work",
           work_date: row.date,
-          travel_from: row.travel_from,
-          travel_to: row.travel_to,
-          work_from: row?.row_type === "return" ? "" : row.work_from,
-          work_to: row?.row_type === "return" ? "" : row.work_to,
+          travel_from: row?.travel_from ? row.travel_from : null,
+          travel_to: row?.travel_to ? row.travel_to : null,
+          work_from: row?.row_type === "return" ? null : row?.work_from ? row.work_from : null,
+          work_to: row?.row_type === "return" ? null : row?.work_to ? row.work_to : null,
           quantity: row.quantity,
           code: row.code,
           description: row.description,

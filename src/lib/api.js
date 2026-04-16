@@ -150,19 +150,56 @@ export async function deleteTimesheet(id) {
    FOGLI INTERVENTO
 ========================= */
 
+function normalizeTimeValue(value) {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function normalizeTextValue(value) {
+  if (value === null || value === undefined) return "";
+  return String(value);
+}
+
+function normalizeNumberValue(value) {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  if (trimmed === "") return null;
+  const num = Number(trimmed.replace(",", "."));
+  return Number.isNaN(num) ? null : num;
+}
+
 function mapWorkRowsForDb(workRows = []) {
   return workRows
-    .filter((row) => Object.values(row || {}).some(Boolean))
-    .map((row) => ({
-      work_date: row.date || null,
-      travel_from: row.travel_from || "",
-      travel_to: row.travel_to || "",
-      work_from: row.work_from || "",
-      work_to: row.work_to || "",
-      quantity: row.quantity || null,
-      code: row.code || "",
-      description: row.description || "",
-    }));
+    .filter((row) => {
+      if (!row) return false;
+
+      return Boolean(
+        row.date ||
+        row.travel_from ||
+        row.travel_to ||
+        row.work_from ||
+        row.work_to ||
+        row.quantity ||
+        row.code ||
+        row.description
+      );
+    })
+    .map((row) => {
+      const isReturn = row?.row_type === "return";
+
+      return {
+        row_type: isReturn ? "return" : "work",
+        work_date: row.date || null,
+        travel_from: normalizeTimeValue(row.travel_from),
+        travel_to: normalizeTimeValue(row.travel_to),
+        work_from: isReturn ? null : normalizeTimeValue(row.work_from),
+        work_to: isReturn ? null : normalizeTimeValue(row.work_to),
+        quantity: normalizeNumberValue(row.quantity),
+        code: normalizeTextValue(row.code),
+        description: normalizeTextValue(row.description),
+      };
+    });
 }
 
 function mapMachinesForDb(machines = []) {
@@ -201,6 +238,7 @@ function mapReportFromDb(report) {
     ...report,
     work_rows: (report.intervention_report_items || []).map((row) => ({
       id: row.id,
+      row_type: row.row_type === "return" ? "return" : "work",
       date: row.work_date || "",
       travel_from: row.travel_from || "",
       travel_to: row.travel_to || "",
@@ -226,6 +264,7 @@ async function fetchSingleInterventionReport(id) {
       intervention_report_items (
         id,
         report_id,
+        row_type,
         work_date,
         travel_from,
         travel_to,
@@ -257,6 +296,7 @@ export async function fetchInterventionReports() {
       intervention_report_items (
         id,
         report_id,
+        row_type,
         work_date,
         travel_from,
         travel_to,
