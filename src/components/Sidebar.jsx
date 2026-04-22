@@ -10,6 +10,7 @@ function buildMenu(role) {
     return [
       ...base,
       { to: '/produzione', label: 'Compila Timesheet' },
+      { to: '/note', label: 'Note' },
       { to: '/storico', label: 'Storico reparto' },
       { to: '/interventi', label: 'Fogli intervento' },
     ];
@@ -19,23 +20,24 @@ function buildMenu(role) {
     return [
       ...base,
       { to: '/ufficio', label: 'Compila Timesheet' },
+      { to: '/note', label: 'Note' },
       { to: '/storico', label: 'Il mio storico' },
       { to: '/interventi', label: 'Fogli intervento' },
     ];
   }
 
   if (role === 'admin') {
-  return [
-    ...base,
-    { to: '/admin', label: 'Dashboard', exact: true },
-    { to: '/admin/timesheets', label: 'Timesheet' },
-    { to: '/admin/riassunti', label: 'Riassunti' },
-    { to: '/admin/anagrafiche', label: 'Anagrafiche' },
-    { to: '/admin/users', label: 'Utenti' },
-    { to: '/storico', label: 'Storico' },
-    { to: '/interventi', label: 'Fogli intervento' },
-  ];
-}
+    return [
+      ...base,
+      { to: '/admin', label: 'Dashboard', exact: true },
+      { to: '/admin/timesheets', label: 'Timesheet' },
+      { to: '/admin/riassunti', label: 'Riassunti' },
+      { to: '/admin/anagrafiche', label: 'Anagrafiche' },
+      { to: '/admin/users', label: 'Utenti' },
+      { to: '/storico', label: 'Storico' },
+      { to: '/interventi', label: 'Fogli intervento' },
+    ];
+  }
 
   return base;
 }

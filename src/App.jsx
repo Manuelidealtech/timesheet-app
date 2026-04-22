@@ -15,6 +15,7 @@ import AdminTimesheets from './pages/admin/AdminTimesheets';
 import AdminRiassunti from './pages/admin/AdminRiassunti';
 import AdminAnagrafiche from './pages/admin/AdminAnagrafiche';
 import AdminUsers from './pages/admin/AdminUsers';
+import Note from './pages/Note';
 
 function AppRoutes() {
   return (
@@ -110,7 +111,19 @@ function AppRoutes() {
           </RequireRole>
         }
       />
+
+      <Route
+        path="/note"
+        element={
+          <RequireRole allow={['produzione', 'ufficio']}>
+            <Note />
+          </RequireRole>
+        }
+      />
+
     </Routes>
+
+
   );
 }
 
