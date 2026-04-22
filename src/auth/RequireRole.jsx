@@ -4,16 +4,22 @@ import { useAuth } from './AuthProvider';
 import { getRoleHomePath } from '../lib/access';
 
 export default function RequireRole({ allow, children }) {
-  const { sessionLoading, user, role, profile } = useAuth();
+  const { sessionLoading, profileLoading, user, role, profile } = useAuth();
 
-  if (sessionLoading) {
-    return <div className="container"><div className="card">Caricamento...</div></div>;
+  if (sessionLoading || profileLoading) {
+    return (
+      <div className="container">
+        <div className="card">Caricamento...</div>
+      </div>
+    );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-  if (!role) {
-    return <div className="container"><div className="card">Sto caricando i permessi...</div></div>;
+  if (!profile || !role) {
+    return <Navigate to="/login" replace />;
   }
 
   if (profile?.is_active === false) {

@@ -58,6 +58,15 @@ function clearCachedProfile() {
   localStorage.removeItem('ts_is_active');
 }
 
+function withTimeout(promise, ms = 4000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Auth timeout')), ms);
+    }),
+  ]);
+}
+
 export function AuthProvider({ children }) {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -66,18 +75,27 @@ export function AuthProvider({ children }) {
 
   const loadingRef = useRef(false);
 
-  async function loadProfile(userId, { silent = false } = {}) {
-    if (!userId || loadingRef.current) return null;
+  async function loadProfile(userId) {
+    if (!userId) {
+      setProfile(null);
+      setProfileLoading(false);
+      return null;
+    }
+
+    if (loadingRef.current) return null;
 
     loadingRef.current = true;
-    if (!silent) setProfileLoading(true);
+    setProfileLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, role, display_name, department, employee_id, is_active, email')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('user_id, role, display_name, department, employee_id, is_active, email')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        4000
+      );
 
       if (error) throw error;
 
@@ -86,22 +104,24 @@ export function AuthProvider({ children }) {
       return normalizedProfile;
     } catch (e) {
       console.error('loadProfile error:', e);
-
       const cachedProfile = readCachedProfile(userId);
       setProfile(cachedProfile);
       return cachedProfile;
     } finally {
       loadingRef.current = false;
-      if (!silent) setProfileLoading(false);
+      setProfileLoading(false);
     }
   }
 
   async function bootstrapAuth() {
     try {
+      setSessionLoading(true);
+      setProfileLoading(true);
+
       const {
         data: { session: currentSession },
         error,
-      } = await supabase.auth.getSession();
+      } = await withTimeout(supabase.auth.getSession(), 4000);
 
       if (error) throw error;
 
@@ -109,61 +129,24 @@ export function AuthProvider({ children }) {
 
       const uid = currentSession?.user?.id ?? null;
 
-      if (uid) {
-        // Usa subito la cache per rendere la UI istantanea
-        const cachedProfile = readCachedProfile(uid);
-        if (cachedProfile) {
-          setProfile(cachedProfile);
-        } else {
-          setProfile(null);
-        }
-
-        // Chiudi subito il bootstrap auth
-        setSessionLoading(false);
-
-        // Aggiorna il profilo in background
-        await loadProfile(uid, { silent: true });
-      } else {
-        setProfile(null);
+      if (!uid) {
         clearCachedProfile();
-        setSessionLoading(false);
+        setProfile(null);
+        return;
       }
+
+      const cachedProfile = readCachedProfile(uid);
+      if (cachedProfile) {
+        setProfile(cachedProfile);
+      }
+
+      await loadProfile(uid);
     } catch (e) {
-      console.error('init session error:', e);
+      console.error('bootstrapAuth error:', e);
 
       const cachedProfile = readCachedProfile(null);
-      setProfile(cachedProfile);
       setSession(null);
-      setSessionLoading(false);
-    } finally {
-      setProfileLoading(false);
-    }
-  }
-
-  async function refreshSessionAndProfile() {
-    try {
-      const {
-        data: { session: currentSession },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (error) throw error;
-
-      setSession(currentSession ?? null);
-
-      const uid = currentSession?.user?.id;
-      if (uid) {
-        const cachedProfile = readCachedProfile(uid);
-        if (cachedProfile) {
-          setProfile(cachedProfile);
-        }
-        await loadProfile(uid, { silent: true });
-      } else {
-        setProfile(null);
-        clearCachedProfile();
-      }
-    } catch (e) {
-      console.warn('refreshSessionAndProfile error:', e);
+      setProfile(cachedProfile || null);
     } finally {
       setSessionLoading(false);
       setProfileLoading(false);
@@ -173,9 +156,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    if (mounted) {
-      bootstrapAuth();
-    }
+    bootstrapAuth();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (!mounted) return;
@@ -190,30 +171,19 @@ export function AuthProvider({ children }) {
           setProfile(cachedProfile);
         }
 
-        setSessionLoading(false);
-        setProfileLoading(false);
-
-        await loadProfile(uid, { silent: true });
+        await loadProfile(uid);
       } else {
-        setProfile(null);
         clearCachedProfile();
-        setSessionLoading(false);
+        setProfile(null);
         setProfileLoading(false);
       }
+
+      setSessionLoading(false);
     });
-
-    const onVis = () => {
-      if (document.visibilityState === 'visible') {
-        refreshSessionAndProfile();
-      }
-    };
-
-    document.addEventListener('visibilitychange', onVis);
 
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
-      document.removeEventListener('visibilitychange', onVis);
     };
   }, []);
 
