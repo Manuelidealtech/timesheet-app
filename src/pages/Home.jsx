@@ -4,6 +4,12 @@ import { useAuth } from '../auth/AuthProvider';
 import { supabase } from '../lib/supabase';
 import { DEPARTMENT_LABELS, ROLE_LABELS } from '../lib/access';
 
+const EMPTY_SUMMARY = {
+  totalTimesheets: 0,
+  totalMinutes: 0,
+  totalEmployees: 0,
+};
+
 export default function Home() {
   const { role, profile } = useAuth();
 
@@ -23,11 +29,7 @@ export default function Home() {
   const [newsContent, setNewsContent] = useState('');
   const [savingNews, setSavingNews] = useState(false);
 
-  const [summary, setSummary] = useState({
-    totalTimesheets: 0,
-    totalMinutes: 0,
-    totalEmployees: 0,
-  });
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
 
   const today = useMemo(() => {
     const now = new Date();
@@ -42,10 +44,12 @@ export default function Home() {
   const targetCompilePath = role === 'ufficio' ? '/ufficio' : '/produzione';
 
   useEffect(() => {
-    let mounted = true;
+    let alive = true;
 
     async function loadMissingEmployees() {
       try {
+        if (!alive) return;
+
         setLoadingMissing(true);
         setMissingError('');
 
@@ -56,7 +60,7 @@ export default function Home() {
           .order('full_name', { ascending: true });
 
         if (isAdmin) {
-          // tutto
+          // nessun filtro
         } else if (isOffice && linkedEmployeeId) {
           employeesQuery = employeesQuery.eq('id', linkedEmployeeId);
         } else if (currentDepartment) {
@@ -66,19 +70,17 @@ export default function Home() {
         const { data: employees, error: empError } = await employeesQuery;
         if (empError) throw empError;
 
-        if (!employees || employees.length === 0) {
-          if (mounted) {
-            setMissingEmployees([]);
-            setSummary({
-              totalTimesheets: 0,
-              totalMinutes: 0,
-              totalEmployees: 0,
-            });
-          }
+        const safeEmployees = employees || [];
+
+        if (!alive) return;
+
+        if (safeEmployees.length === 0) {
+          setMissingEmployees([]);
+          setSummary(EMPTY_SUMMARY);
           return;
         }
 
-        const employeeIds = employees.map((emp) => emp.id);
+        const employeeIds = safeEmployees.map((emp) => emp.id);
 
         const { data: todayTimesheets, error: tsError } = await supabase
           .from('timesheets')
@@ -87,36 +89,39 @@ export default function Home() {
           .in('employee_id', employeeIds);
 
         if (tsError) throw tsError;
+        if (!alive) return;
 
-        const compiledToday = new Set((todayTimesheets || []).map((row) => row.employee_id));
-        const missing = employees.filter((emp) => !compiledToday.has(emp.id));
-        const totalMinutes = (todayTimesheets || []).reduce((acc, row) => acc + (row.minutes || 0), 0);
+        const safeTimesheets = todayTimesheets || [];
+        const compiledToday = new Set(safeTimesheets.map((row) => row.employee_id));
+        const missing = safeEmployees.filter((emp) => !compiledToday.has(emp.id));
+        const totalMinutes = safeTimesheets.reduce(
+          (acc, row) => acc + (Number(row.minutes) || 0),
+          0
+        );
 
-        if (mounted) {
-          setMissingEmployees(missing);
-          setSummary({
-            totalTimesheets: (todayTimesheets || []).length,
-            totalMinutes,
-            totalEmployees: employees.length,
-          });
-        }
+        setMissingEmployees(missing);
+        setSummary({
+          totalTimesheets: safeTimesheets.length,
+          totalMinutes,
+          totalEmployees: safeEmployees.length,
+        });
       } catch (err) {
         console.error('Errore caricamento dipendenti mancanti:', err);
-        if (mounted) {
-          setMissingError('Impossibile caricare il resoconto giornaliero.');
-          setSummary({
-            totalTimesheets: 0,
-            totalMinutes: 0,
-            totalEmployees: 0,
-          });
-        }
+
+        if (!alive) return;
+
+        setMissingError('Impossibile caricare il resoconto giornaliero.');
+        setMissingEmployees([]);
+        setSummary(EMPTY_SUMMARY);
       } finally {
-        if (mounted) setLoadingMissing(false);
+        if (alive) setLoadingMissing(false);
       }
     }
 
     async function loadNews() {
       try {
+        if (!alive) return;
+
         setLoadingNews(true);
         setNewsError('');
 
@@ -127,12 +132,17 @@ export default function Home() {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        if (mounted) setNewsItems(data || []);
+        if (!alive) return;
+
+        setNewsItems(data || []);
       } catch (err) {
         console.error('Errore caricamento news:', err);
-        if (mounted) setNewsError('Impossibile caricare le news.');
+        if (!alive) return;
+
+        setNewsError('Impossibile caricare le news.');
+        setNewsItems([]);
       } finally {
-        if (mounted) setLoadingNews(false);
+        if (alive) setLoadingNews(false);
       }
     }
 
@@ -140,7 +150,7 @@ export default function Home() {
     loadNews();
 
     return () => {
-      mounted = false;
+      alive = false;
     };
   }, [today, isAdmin, isOffice, currentDepartment, linkedEmployeeId]);
 
@@ -148,6 +158,7 @@ export default function Home() {
     e.preventDefault();
     const title = newsTitle.trim();
     const content = newsContent.trim();
+
     if (!title || !content) return;
 
     try {
@@ -157,12 +168,14 @@ export default function Home() {
       const { data, error } = await supabase
         .from('news')
         .insert([{ title, content, is_published: true }])
-        .select();
+        .select()
+        .single();
 
       if (error) throw error;
 
-      const created = data?.[0];
-      if (created) setNewsItems((prev) => [created, ...prev]);
+      if (data) {
+        setNewsItems((prev) => [data, ...prev]);
+      }
 
       setNewsTitle('');
       setNewsContent('');
@@ -178,8 +191,11 @@ export default function Home() {
     if (!window.confirm('Vuoi eliminare questa news?')) return;
 
     try {
+      setNewsError('');
+
       const { error } = await supabase.from('news').delete().eq('id', id);
       if (error) throw error;
+
       setNewsItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       console.error('Errore eliminazione news:', err);
