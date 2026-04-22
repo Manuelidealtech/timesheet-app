@@ -223,8 +223,7 @@ function extractReportFields(payload) {
     overnight_stays: payload.overnight_stays || "",
     machine_order_number: payload.machine_order_number || "",
     tested_on: payload.tested_on || null,
-    tested_with_positive_result:
-      payload.tested_with_positive_result === true,
+    tested_with_positive_result: payload.tested_with_positive_result === true,
     technician_signature: payload.technician_signature || "",
     client_signature: payload.client_signature || "",
     notes: payload.notes || "",
@@ -288,40 +287,24 @@ async function fetchSingleInterventionReport(id) {
   return mapReportFromDb(data);
 }
 
-export async function fetchInterventionReports() {
-  const { data, error } = await supabase
-    .from("intervention_reports")
-    .select(`
-      *,
-      intervention_report_items (
-        id,
-        report_id,
-        row_type,
-        work_date,
-        travel_from,
-        travel_to,
-        work_from,
-        work_to,
-        quantity,
-        code,
-        description
-      ),
-      intervention_report_machines (
-        id,
-        report_id,
-        model,
-        serial_number
-      )
-    `)
-    .order("report_date", { ascending: false })
-    .order("created_at", { ascending: false });
+async function ensureInterventionReportNumber(reportNumber) {
+  if (reportNumber && String(reportNumber).trim()) {
+    return String(reportNumber).trim();
+  }
+
+  const { data, error } = await supabase.rpc("generate_intervention_report_number");
 
   if (error) throw error;
-  return (data || []).map(mapReportFromDb);
+  return data;
 }
 
 export async function createInterventionReport(payload) {
-  const reportFields = extractReportFields(payload);
+  const generatedReportNumber = await ensureInterventionReportNumber(payload.report_number);
+
+  const reportFields = extractReportFields({
+    ...payload,
+    report_number: generatedReportNumber,
+  });
 
   const { data: report, error: reportError } = await supabase
     .from("intervention_reports")
@@ -360,8 +343,58 @@ export async function createInterventionReport(payload) {
   return await fetchSingleInterventionReport(report.id);
 }
 
+export async function fetchInterventionReports() {
+  const { data, error } = await supabase
+    .from("intervention_reports")
+    .select(`
+      *,
+      intervention_report_items (
+        id,
+        report_id,
+        row_type,
+        work_date,
+        travel_from,
+        travel_to,
+        work_from,
+        work_to,
+        quantity,
+        code,
+        description
+      ),
+      intervention_report_machines (
+        id,
+        report_id,
+        model,
+        serial_number
+      )
+    `)
+    .order("report_date", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(mapReportFromDb);
+}
+
 export async function updateInterventionReport(id, patch) {
-  const reportFields = extractReportFields(patch);
+  let reportNumber = patch.report_number;
+
+  if (!reportNumber) {
+    const { data: existingReport, error: existingError } = await supabase
+      .from("intervention_reports")
+      .select("report_number")
+      .eq("id", id)
+      .single();
+
+    if (existingError) throw existingError;
+    reportNumber = existingReport?.report_number || null;
+  }
+
+  const ensuredReportNumber = await ensureInterventionReportNumber(reportNumber);
+
+  const reportFields = extractReportFields({
+    ...patch,
+    report_number: ensuredReportNumber,
+  });
 
   const { error: reportError } = await supabase
     .from("intervention_reports")

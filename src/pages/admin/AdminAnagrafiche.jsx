@@ -42,6 +42,7 @@ export default function AdminAnagrafiche() {
   // create forms
   const [empName, setEmpName] = useState("");
   const [empCost, setEmpCost] = useState("0");
+  const [empDepartment, setEmpDepartment] = useState("produzione");
 
   const [cdlCode, setCdlCode] = useState("");
   const [cdlName, setCdlName] = useState("");
@@ -89,12 +90,14 @@ export default function AdminAnagrafiche() {
     const { error } = await supabase.from("employees").insert({
       full_name: empName.trim(),
       hourly_cost: cost,
+      department: empDepartment,
       is_active: true,
     });
 
     if (error) return setErr(error.message);
     setEmpName("");
     setEmpCost("0");
+    setEmpDepartment("produzione");
     toast("Dipendente aggiunto ✅");
     await loadAll();
   }
@@ -147,6 +150,7 @@ export default function AdminAnagrafiche() {
       setEditFields({
         full_name: row.full_name || "",
         hourly_cost: String(row.hourly_cost ?? 0),
+        department: row.department || "produzione",
       });
     } else if (table === "cdl") {
       setEditFields({
@@ -171,7 +175,11 @@ export default function AdminAnagrafiche() {
       if (!editFields.full_name?.trim()) return setErr("Nome dipendente obbligatorio.");
       const cost = Number(String(editFields.hourly_cost).replace(",", "."));
       if (Number.isNaN(cost)) return setErr("Costo orario non valido.");
-      patch = { full_name: editFields.full_name.trim(), hourly_cost: cost };
+      patch = {
+        full_name: editFields.full_name.trim(),
+        hourly_cost: cost,
+        department: editFields.department || 'produzione',
+      };
     }
     if (table === "cdl") {
       if (!editFields.name?.trim()) return setErr("Nome commessa obbligatorio.");
@@ -276,6 +284,13 @@ export default function AdminAnagrafiche() {
                 <label>Costo orario (€)</label>
                 <input value={empCost} onChange={(e) => setEmpCost(e.target.value)} placeholder="Es: 22" />
               </div>
+              <div className="formGroup">
+                <label>Reparto</label>
+                <select value={empDepartment} onChange={(e) => setEmpDepartment(e.target.value)}>
+                  <option value="produzione">Produzione</option>
+                  <option value="ufficio">Ufficio</option>
+                </select>
+              </div>
             </div>
 
             <div className="row" style={{ marginTop: 12 }}>
@@ -287,6 +302,7 @@ export default function AdminAnagrafiche() {
                 <thead>
                   <tr>
                     <th>Nome</th>
+                    <th>Reparto</th>
                     <th>Costo</th>
                     <th>Attivo</th>
                     <th className="actionsCell">Azioni</th>
@@ -296,6 +312,7 @@ export default function AdminAnagrafiche() {
                   {employees.map((x) => (
                     <tr key={x.id}>
                       <td>{x.full_name}</td>
+                      <td>{x.department === 'ufficio' ? 'Ufficio' : 'Produzione'}</td>
                       <td>{Number(x.hourly_cost || 0).toFixed(2)} €</td>
                       <td>
                         <button className="btn iconBtn" onClick={() => toggle("employees", x)}>
@@ -309,7 +326,7 @@ export default function AdminAnagrafiche() {
                     </tr>
                   ))}
                   {!employees.length && (
-                    <tr><td colSpan="4" style={{ textAlign: "center", opacity: .7, padding: 18 }}>Nessun dipendente</td></tr>
+                    <tr><td colSpan="5" style={{ textAlign: "center", opacity: .7, padding: 18 }}>Nessun dipendente</td></tr>
                   )}
                 </tbody>
               </table>
@@ -470,6 +487,16 @@ export default function AdminAnagrafiche() {
                   value={editFields.hourly_cost || ""}
                   onChange={(e) => setEditFields((p) => ({ ...p, hourly_cost: e.target.value }))}
                 />
+              </div>
+              <div className="formGroup">
+                <label>Reparto</label>
+                <select
+                  value={editFields.department || 'produzione'}
+                  onChange={(e) => setEditFields((p) => ({ ...p, department: e.target.value }))}
+                >
+                  <option value="produzione">Produzione</option>
+                  <option value="ufficio">Ufficio</option>
+                </select>
               </div>
             </div>
             <div className="row">

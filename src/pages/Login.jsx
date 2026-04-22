@@ -1,33 +1,33 @@
-import React, { useState } from "react";
-import { useAuth } from "../auth/AuthProvider";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useAuth } from '../auth/AuthProvider';
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, role } = useAuth();
   const nav = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [err, setErr] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [err, setErr] = useState('');
 
   async function onSubmit(e) {
     e.preventDefault();
-    setErr("");
+    setErr('');
     try {
       await signIn(email, password);
-      nav("/", { replace: true });
+      nav('/', { replace: true });
     } catch (e2) {
-      setErr(e2?.message || "Errore login");
+      setErr(e2?.message || 'Errore login');
     }
   }
 
   return (
     <div className="container">
-      <div className="card" style={{ maxWidth: 520, margin: "40px auto" }}>
+      <div className="card" style={{ maxWidth: 520, margin: '40px auto' }}>
         <div className="cardHeader">
           <div>
             <h1 className="h1">Timesheet</h1>
-            <p className="sub">Accedi come Admin o Produzione</p>
+            <p className="sub">Accedi come amministratore, produzione o ufficio</p>
           </div>
           <span className="badge">Idealtech</span>
         </div>
@@ -48,9 +48,6 @@ export default function Login() {
           {err && <div className="toast err">{err}</div>}
 
           <button className="btn btnPrimary">Accedi</button>
-
-          <p className="sub" style={{ margin: 0 }}>
-          </p>
         </form>
       </div>
     </div>

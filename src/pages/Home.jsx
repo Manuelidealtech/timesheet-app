@@ -1,30 +1,45 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../auth/AuthProvider";
-import { Link } from "react-router-dom";
-import { supabase } from "../lib/supabase";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/AuthProvider';
+import { supabase } from '../lib/supabase';
+import { DEPARTMENT_LABELS, ROLE_LABELS } from '../lib/access';
 
 export default function Home() {
   const { role, profile } = useAuth();
 
+  const isAdmin = role === 'admin';
+  const isOffice = role === 'ufficio';
+  const currentDepartment = profile?.department || null;
+  const linkedEmployeeId = profile?.employee_id ? Number(profile.employee_id) : null;
+
   const [missingEmployees, setMissingEmployees] = useState([]);
   const [loadingMissing, setLoadingMissing] = useState(true);
-  const [missingError, setMissingError] = useState("");
+  const [missingError, setMissingError] = useState('');
 
   const [newsItems, setNewsItems] = useState([]);
   const [loadingNews, setLoadingNews] = useState(true);
-  const [newsError, setNewsError] = useState("");
-
-  const [newsTitle, setNewsTitle] = useState("");
-  const [newsContent, setNewsContent] = useState("");
+  const [newsError, setNewsError] = useState('');
+  const [newsTitle, setNewsTitle] = useState('');
+  const [newsContent, setNewsContent] = useState('');
   const [savingNews, setSavingNews] = useState(false);
+
+  const [summary, setSummary] = useState({
+    totalTimesheets: 0,
+    totalMinutes: 0,
+    totalEmployees: 0,
+  });
 
   const today = useMemo(() => {
     const now = new Date();
     const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }, []);
+
+  const roleLabel = ROLE_LABELS[role] || role;
+  const departmentLabel = currentDepartment ? DEPARTMENT_LABELS[currentDepartment] : null;
+  const targetCompilePath = role === 'ufficio' ? '/ufficio' : '/produzione';
 
   useEffect(() => {
     let mounted = true;
@@ -32,41 +47,69 @@ export default function Home() {
     async function loadMissingEmployees() {
       try {
         setLoadingMissing(true);
-        setMissingError("");
+        setMissingError('');
 
-        const { data: employees, error: empError } = await supabase
-          .from("employees")
-          .select("id, full_name")
-          .eq("is_active", true)
-          .order("full_name", { ascending: true });
+        let employeesQuery = supabase
+          .from('employees')
+          .select('id, full_name, department')
+          .eq('is_active', true)
+          .order('full_name', { ascending: true });
 
+        if (isAdmin) {
+          // tutto
+        } else if (isOffice && linkedEmployeeId) {
+          employeesQuery = employeesQuery.eq('id', linkedEmployeeId);
+        } else if (currentDepartment) {
+          employeesQuery = employeesQuery.eq('department', currentDepartment);
+        }
+
+        const { data: employees, error: empError } = await employeesQuery;
         if (empError) throw empError;
 
         if (!employees || employees.length === 0) {
-          if (mounted) setMissingEmployees([]);
+          if (mounted) {
+            setMissingEmployees([]);
+            setSummary({
+              totalTimesheets: 0,
+              totalMinutes: 0,
+              totalEmployees: 0,
+            });
+          }
           return;
         }
 
         const employeeIds = employees.map((emp) => emp.id);
 
         const { data: todayTimesheets, error: tsError } = await supabase
-          .from("timesheets")
-          .select("employee_id, work_date")
-          .eq("work_date", today)
-          .in("employee_id", employeeIds);
+          .from('timesheets')
+          .select('employee_id, minutes')
+          .eq('work_date', today)
+          .in('employee_id', employeeIds);
 
         if (tsError) throw tsError;
 
-        const compiledToday = new Set(
-          (todayTimesheets || []).map((row) => row.employee_id)
-        );
-
+        const compiledToday = new Set((todayTimesheets || []).map((row) => row.employee_id));
         const missing = employees.filter((emp) => !compiledToday.has(emp.id));
+        const totalMinutes = (todayTimesheets || []).reduce((acc, row) => acc + (row.minutes || 0), 0);
 
-        if (mounted) setMissingEmployees(missing);
+        if (mounted) {
+          setMissingEmployees(missing);
+          setSummary({
+            totalTimesheets: (todayTimesheets || []).length,
+            totalMinutes,
+            totalEmployees: employees.length,
+          });
+        }
       } catch (err) {
-        console.error("Errore caricamento dipendenti mancanti:", err);
-        if (mounted) setMissingError("Impossibile caricare il resoconto giornaliero.");
+        console.error('Errore caricamento dipendenti mancanti:', err);
+        if (mounted) {
+          setMissingError('Impossibile caricare il resoconto giornaliero.');
+          setSummary({
+            totalTimesheets: 0,
+            totalMinutes: 0,
+            totalEmployees: 0,
+          });
+        }
       } finally {
         if (mounted) setLoadingMissing(false);
       }
@@ -75,20 +118,19 @@ export default function Home() {
     async function loadNews() {
       try {
         setLoadingNews(true);
-        setNewsError("");
+        setNewsError('');
 
         const { data, error } = await supabase
-          .from("news")
-          .select("id, title, content, created_at, is_published")
-          .eq("is_published", true)
-          .order("created_at", { ascending: false });
+          .from('news')
+          .select('id, title, content, created_at, is_published')
+          .eq('is_published', true)
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
-
         if (mounted) setNewsItems(data || []);
       } catch (err) {
-        console.error("Errore caricamento news:", err);
-        if (mounted) setNewsError("Impossibile caricare le news.");
+        console.error('Errore caricamento news:', err);
+        if (mounted) setNewsError('Impossibile caricare le news.');
       } finally {
         if (mounted) setLoadingNews(false);
       }
@@ -100,109 +142,137 @@ export default function Home() {
     return () => {
       mounted = false;
     };
-  }, [today]);
+  }, [today, isAdmin, isOffice, currentDepartment, linkedEmployeeId]);
 
   async function handleCreateNews(e) {
     e.preventDefault();
-
     const title = newsTitle.trim();
     const content = newsContent.trim();
-
     if (!title || !content) return;
 
     try {
       setSavingNews(true);
-      setNewsError("");
+      setNewsError('');
 
       const { data, error } = await supabase
-        .from("news")
-        .insert([
-          {
-            title,
-            content,
-            is_published: true,
-          },
-        ])
+        .from('news')
+        .insert([{ title, content, is_published: true }])
         .select();
 
       if (error) throw error;
 
       const created = data?.[0];
-      if (created) {
-        setNewsItems((prev) => [created, ...prev]);
-      }
+      if (created) setNewsItems((prev) => [created, ...prev]);
 
-      setNewsTitle("");
-      setNewsContent("");
+      setNewsTitle('');
+      setNewsContent('');
     } catch (err) {
-      console.error("Errore creazione news:", err);
-      setNewsError("Impossibile pubblicare la news.");
+      console.error('Errore creazione news:', err);
+      setNewsError('Impossibile pubblicare la news.');
     } finally {
       setSavingNews(false);
     }
   }
 
   async function handleDeleteNews(id) {
-    const ok = window.confirm("Vuoi eliminare questa news?");
-    if (!ok) return;
+    if (!window.confirm('Vuoi eliminare questa news?')) return;
 
     try {
-      const { error } = await supabase.from("news").delete().eq("id", id);
+      const { error } = await supabase.from('news').delete().eq('id', id);
       if (error) throw error;
-
       setNewsItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      console.error("Errore eliminazione news:", err);
-      setNewsError("Impossibile eliminare la news.");
+      console.error('Errore eliminazione news:', err);
+      setNewsError('Impossibile eliminare la news.');
     }
   }
 
   function formatDate(value) {
-    if (!value) return "";
-    const date = new Date(value);
-    return date.toLocaleDateString("it-IT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+    if (!value) return '';
+    return new Date(value).toLocaleDateString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
   }
 
   return (
-    <div>
-      <div className="card homeCard">
+    <div className="container pageShell">
+      <section className="pageHero homeCard">
         <div className="cardHeader">
           <div>
             <h1 className="h1">Timesheet</h1>
             <p className="sub">
-              Ruolo: <b>{role}</b>
-              {profile?.display_name ? ` — ${profile.display_name}` : ""}
+              Ruolo: <b>{roleLabel}</b>
+              {profile?.display_name ? ` — ${profile.display_name}` : ''}
+              {departmentLabel ? ` · ${departmentLabel}` : ''}
             </p>
           </div>
         </div>
 
         <hr className="sep" />
 
-        <div className="row">
-          {role === "produzione" && (
+        <div className="row" style={{ flexWrap: 'wrap', gap: 12 }}>
+          {!isAdmin && (
             <>
-              <Link className="btn btnPrimary" to="/produzione">
+              <Link className="btn btnPrimary" to={targetCompilePath}>
                 Compila Timesheet
               </Link>
               <Link className="btn" to="/storico">
-                Storico
+                {isOffice ? 'Il mio storico' : 'Storico reparto'}
+              </Link>
+              <Link className="btn" to="/interventi">
+                Fogli intervento
               </Link>
             </>
           )}
 
+          {isAdmin && (
+            <>
+              <Link className="btn btnPrimary" to="/admin">
+                Apri Dashboard
+              </Link>
+              <Link className="btn" to="/admin/users">
+                Gestisci utenti
+              </Link>
+              <Link className="btn" to="/admin/timesheets">
+                Controlla timesheet
+              </Link>
+              <Link className="btn" to="/storico">
+                Storico reparto
+              </Link>
+            </>
+          )}
         </div>
 
-        <section className="dailyReport">
+        <div className="grid2" style={{ marginTop: 16 }}>
+          <div className="kpi">
+            <div className="label">Timesheet oggi</div>
+            <div className="value">{summary.totalTimesheets}</div>
+          </div>
+          <div className="kpi">
+            <div className="label">Minuti registrati oggi</div>
+            <div className="value">{summary.totalMinutes}</div>
+          </div>
+        </div>
+
+        <section className="dailyReport" style={{ marginTop: 18 }}>
           <div className="dailyReportHead">
             <div>
               <span className="dailyReportEyebrow">Monitoraggio giornaliero</span>
-              <h2 className="dailyReportTitle">Compilazione timesheet di oggi</h2>
+              <h2 className="dailyReportTitle">
+                {isAdmin
+                  ? 'Compilazione timesheet globale'
+                  : isOffice
+                    ? 'Compilazione del tuo timesheet'
+                    : `Compilazione timesheet ${departmentLabel?.toLowerCase() || 'reparto'}`}
+              </h2>
               <p className="dailyReportText">
-                Qui sotto vengono mostrati i dipendenti che oggi non hanno ancora inserito alcun timesheet.
+                {isAdmin
+                  ? 'Qui sotto vedi chi non ha ancora inserito alcun timesheet oggi in tutta l’azienda.'
+                  : isOffice
+                    ? 'Qui sotto vedi se il tuo profilo collegato ha già compilato il timesheet di oggi.'
+                    : 'Qui sotto vedi chi non ha ancora inserito alcun timesheet oggi nel tuo reparto.'}
               </p>
             </div>
 
@@ -210,21 +280,19 @@ export default function Home() {
               <div
                 className={
                   missingEmployees.length > 0
-                    ? "reportCounter reportCounterAlert"
-                    : "reportCounter reportCounterOk"
+                    ? 'reportCounter reportCounterAlert'
+                    : 'reportCounter reportCounterOk'
                 }
               >
                 {missingEmployees.length > 0
                   ? `${missingEmployees.length} mancanti`
-                  : "Tutti compilati"}
+                  : 'Tutti compilati'}
               </div>
             )}
           </div>
 
           {loadingMissing && (
-            <div className="reportState reportStateNeutral">
-              Caricamento resoconto...
-            </div>
+            <div className="reportState reportStateNeutral">Caricamento resoconto...</div>
           )}
 
           {!loadingMissing && missingError && (
@@ -233,111 +301,101 @@ export default function Home() {
 
           {!loadingMissing && !missingError && missingEmployees.length === 0 && (
             <div className="reportState reportStateSuccess">
-              Tutti i dipendenti hanno già compilato almeno un timesheet oggi.
+              Tutti i dipendenti visibili hanno già compilato almeno un timesheet oggi.
             </div>
           )}
 
           {!loadingMissing && !missingError && missingEmployees.length > 0 && (
-            <div className="missingList">
-              {missingEmployees.map((emp) => (
-                <div key={emp.id} className="missingChip">
-                  <span className="missingDot"></span>
-                  <span>{emp.full_name}</span>
+            <div className="grid" style={{ gap: 10, marginTop: 14 }}>
+              {missingEmployees.map((employee) => (
+                <div key={employee.id} className="kpi" style={{ padding: 14 }}>
+                  <div style={{ fontWeight: 700 }}>{employee.full_name}</div>
+                  <div className="sub" style={{ marginTop: 4 }}>
+                    {employee.department
+                      ? DEPARTMENT_LABELS[employee.department] || employee.department
+                      : 'Reparto non assegnato'}
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </section>
 
-        <section className="newsSection">
-          <div className="newsHead">
+        <div className="card" style={{ marginTop: 18 }}>
+          <div className="cardHeader">
             <div>
-              <span className="dailyReportEyebrow">Aggiornamenti</span>
-              <h2 className="dailyReportTitle">News applicazione</h2>
-              <p className="dailyReportText">
-                Ultime comunicazioni e aggiornamenti relativi alle applicazioni.
-              </p>
+              <h2 className="h1" style={{ fontSize: 24 }}>
+                News interne
+              </h2>
+              <p className="sub">Aggiornamenti rapidi visibili a tutti gli utenti dell’app.</p>
             </div>
+            {isAdmin && <span className="badge">Admin</span>}
           </div>
 
-          {role === "admin" && (
-            <form className="newsComposer" onSubmit={handleCreateNews}>
-              <div className="newsComposerGrid">
-                <div className="formGroup">
-                  <label htmlFor="news-title">Titolo news</label>
-                  <input
-                    id="news-title"
-                    type="text"
-                    value={newsTitle}
-                    onChange={(e) => setNewsTitle(e.target.value)}
-                    placeholder="Es. Nuovo filtro nello storico"
-                  />
-                </div>
+          <hr className="sep" />
 
-                <div className="formGroup">
-                  <label htmlFor="news-content">Contenuto</label>
-                  <textarea
-                    id="news-content"
-                    value={newsContent}
-                    onChange={(e) => setNewsContent(e.target.value)}
-                    placeholder="Scrivi qui l’aggiornamento da mostrare agli utenti..."
-                  />
-                </div>
+          {isAdmin && (
+            <form onSubmit={handleCreateNews} className="grid" style={{ marginBottom: 18 }}>
+              <div className="formGroup">
+                <label>Titolo</label>
+                <input
+                  value={newsTitle}
+                  onChange={(e) => setNewsTitle(e.target.value)}
+                  placeholder="Nuovo aggiornamento"
+                />
               </div>
 
-              <div className="newsComposerActions">
-                <button
-                  type="submit"
-                  className="btn btnPrimary"
-                  disabled={savingNews || !newsTitle.trim() || !newsContent.trim()}
-                >
-                  {savingNews ? "Pubblicazione..." : "Pubblica news"}
+              <div className="formGroup">
+                <label>Contenuto</label>
+                <textarea
+                  value={newsContent}
+                  onChange={(e) => setNewsContent(e.target.value)}
+                  placeholder="Scrivi il messaggio da mostrare in home..."
+                />
+              </div>
+
+              <div className="row">
+                <button type="submit" className="btn btnPrimary" disabled={savingNews}>
+                  {savingNews ? 'Pubblico...' : 'Pubblica news'}
                 </button>
               </div>
             </form>
           )}
 
-          {newsError && <div className="reportState reportStateError">{newsError}</div>}
-
-          {loadingNews && (
-            <div className="reportState reportStateNeutral">Caricamento news...</div>
+          {newsError && <div className="toast err">{newsError}</div>}
+          {loadingNews && <div className="sub">Caricamento news...</div>}
+          {!loadingNews && !newsItems.length && (
+            <div className="sub">Nessuna news pubblicata.</div>
           )}
 
-          {!loadingNews && !newsError && newsItems.length === 0 && (
-            <div className="reportState reportStateNeutral">
-              Nessuna news pubblicata al momento.
-            </div>
-          )}
+          <div className="newsList">
+            {newsItems.map((item) => (
+              <div key={item.id} className="newsItem">
+                <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ fontWeight: 700 }}>{item.title}</div>
+                  <span className="sub">{formatDate(item.created_at)}</span>
+                </div>
 
-          {!loadingNews && newsItems.length > 0 && (
-            <div className="newsList">
-              {newsItems.map((item) => (
-                <article key={item.id} className="newsItem">
-                  <div className="newsMetaRow">
-                    <div className="newsMetaLeft">
-                      <span className="newsDate">{formatDate(item.created_at)}</span>
-                      <span className="newsBadge">Aggiornamento</span>
-                    </div>
+                <div className="sub" style={{ marginTop: 10, whiteSpace: 'pre-wrap' }}>
+                  {item.content}
+                </div>
 
-                    {role === "admin" && (
-                      <button
-                        type="button"
-                        className="btn btnRed"
-                        onClick={() => handleDeleteNews(item.id)}
-                      >
-                        Elimina
-                      </button>
-                    )}
+                {isAdmin && (
+                  <div className="row" style={{ marginTop: 12 }}>
+                    <button
+                      type="button"
+                      className="btn btnDanger"
+                      onClick={() => handleDeleteNews(item.id)}
+                    >
+                      Elimina
+                    </button>
                   </div>
-
-                  <h3 className="newsTitle">{item.title}</h3>
-                  <p className="newsBody">{item.content}</p>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
