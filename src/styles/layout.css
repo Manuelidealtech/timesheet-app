@@ -251,3 +251,52 @@ input, select, textarea{ font-size: 16px; padding: 13px 14px; }
     font-size: 14px;
   }
 }
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modalCard {
+  width: min(780px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  background: var(--card-bg, #fff);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+}
+
+.btnSmall {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+@media (max-width: 720px) {
+  .modalCard form > div {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modalOverlay {
+    align-items: flex-start;
+    padding: 14px;
+  }
+
+  .modalCard {
+    border-radius: 18px;
+    padding: 16px;
+  }
+}
