@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 
@@ -17,6 +19,99 @@ function calcMinutes(start, end) {
 
   const diff = endDate.diff(startDate, "minute");
   return diff > 0 ? diff : 0;
+}
+
+
+const PDF_LOGO_PATH = "/logo-idealtech.png";
+const EXPORT_PAGE_SIZE = 1000;
+
+function safeText(value, fallback = "-") {
+  const text = value === null || value === undefined ? "" : String(value).trim();
+  return text || fallback;
+}
+
+function formatDateIT(value) {
+  if (!value) return "-";
+  const d = dayjs(value);
+  return d.isValid() ? d.format("DD/MM/YYYY") : String(value);
+}
+
+function formatTime(value) {
+  if (!value) return "-";
+  return String(value).slice(0, 5);
+}
+
+function getCdlLabel(item) {
+  if (!item) return "-";
+  return `${item.code ? `${item.code} - ` : ""}${safeText(item.name)}`;
+}
+
+function getSelectedLabel(items, selectedId, fallback, formatter) {
+  if (!selectedId) return fallback;
+  const item = items.find((x) => String(x.id) === String(selectedId));
+  return item ? formatter(item) : fallback;
+}
+
+
+function rowMatchesSearch(row, query) {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+
+  const searchText = [
+    row.work_date,
+    row.employees?.full_name,
+    row.cdl?.code,
+    row.cdl?.name,
+    row.lavorazioni?.name,
+    row.note,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return searchText.includes(needle);
+}
+
+function getImageFormat(dataUrl) {
+  if (!dataUrl) return "PNG";
+  if (dataUrl.startsWith("data:image/jpeg") || dataUrl.startsWith("data:image/jpg")) {
+    return "JPEG";
+  }
+  return "PNG";
+}
+
+async function loadImageAsDataUrl(path) {
+  try {
+    const response = await fetch(path);
+    if (!response.ok) return null;
+
+    const blob = await response.blob();
+
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.warn("Logo PDF non caricato:", error);
+    return null;
+  }
+}
+
+function drawPdfFooter(doc) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
+
+  doc.setDrawColor(226, 232, 240);
+  doc.line(12, pageHeight - 12, pageWidth - 12, pageHeight - 12);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Idealtech - Report timesheet amministrazione", 12, pageHeight - 7);
+  doc.text(`Pagina ${pageNumber}`, pageWidth - 12, pageHeight - 7, { align: "right" });
 }
 
 export default function AdminTimesheets() {
@@ -38,6 +133,7 @@ export default function AdminTimesheets() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [exportingPdf, setExportingPdf] = useState(null);
   const [err, setErr] = useState("");
 
   const [editOpen, setEditOpen] = useState(false);
@@ -137,32 +233,294 @@ export default function AdminTimesheets() {
     // eslint-disable-next-line
   }, []);
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-
-    if (!needle) return rows;
-
-    return rows.filter((r) => {
-      const s = [
-        r.work_date,
-        r.employees?.full_name,
-        r.cdl?.code,
-        r.cdl?.name,
-        r.lavorazioni?.name,
-        r.note,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return s.includes(needle);
-    });
-  }, [rows, q]);
+  const filtered = useMemo(() => rows.filter((row) => rowMatchesSearch(row, q)), [rows, q]);
 
   const totalMinutes = useMemo(
     () => filtered.reduce((a, r) => a + (r.minutes || 0), 0),
     [filtered]
   );
+
+
+  function buildTimesheetsQuery({ ignorePeriod = false, pageFrom = 0, pageTo = EXPORT_PAGE_SIZE - 1 } = {}) {
+    let qy = supabase
+      .from("timesheets")
+      .select(`
+        id,
+        work_date,
+        start_time,
+        end_time,
+        minutes,
+        note,
+        employee_id,
+        cdl_id,
+        lavorazione_id,
+        employees(full_name),
+        cdl(id, code, name),
+        lavorazioni(id, name)
+      `)
+      .order("work_date", { ascending: false })
+      .order("start_time", { ascending: false })
+      .range(pageFrom, pageTo);
+
+    if (!ignorePeriod) {
+      qy = qy.gte("work_date", from).lte("work_date", to);
+    }
+
+    if (employeeId) qy = qy.eq("employee_id", Number(employeeId));
+    if (cdlId) qy = qy.eq("cdl_id", Number(cdlId));
+    if (lavId) qy = qy.eq("lavorazione_id", Number(lavId));
+
+    return qy;
+  }
+
+  async function fetchTimesheetsForExport({ ignorePeriod = false } = {}) {
+    const allRows = [];
+    let pageFrom = 0;
+
+    while (true) {
+      const pageTo = pageFrom + EXPORT_PAGE_SIZE - 1;
+      const { data, error } = await buildTimesheetsQuery({ ignorePeriod, pageFrom, pageTo });
+
+      if (error) throw error;
+
+      const batch = data || [];
+      allRows.push(...batch);
+
+      if (batch.length < EXPORT_PAGE_SIZE) break;
+      pageFrom += EXPORT_PAGE_SIZE;
+    }
+
+    return allRows.filter((row) => rowMatchesSearch(row, q));
+  }
+
+  async function exportTimesheetsPdf({ ignorePeriod = false } = {}) {
+    setErr("");
+    setExportingPdf(ignorePeriod ? "all" : "period");
+
+    try {
+      const exportRows = await fetchTimesheetsForExport({ ignorePeriod });
+
+      if (!exportRows.length) {
+        setErr("Nessun timesheet da esportare con i filtri attuali.");
+        return;
+      }
+
+      const totalExportMinutes = exportRows.reduce((sum, row) => sum + (row.minutes || 0), 0);
+      const periodLabel = ignorePeriod
+        ? "Tutto lo storico"
+        : `${formatDateIT(from)} - ${formatDateIT(to)}`;
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const marginX = 12;
+      const logoDataUrl = await loadImageAsDataUrl(PDF_LOGO_PATH);
+      const generatedAt = dayjs().format("DD/MM/YYYY HH:mm");
+
+      const employeeLabel = getSelectedLabel(
+        employees,
+        employeeId,
+        "Tutti i dipendenti",
+        (x) => x.full_name
+      );
+      const cdlLabel = getSelectedLabel(cdl, cdlId, "Tutte le commesse", getCdlLabel);
+      const lavLabel = getSelectedLabel(lavorazioni, lavId, "Tutte le lavorazioni", (x) => x.name);
+      const searchLabel = q.trim() ? q.trim() : "Nessuna ricerca testuale";
+
+      const totalsByEmployee = Object.values(
+        exportRows.reduce((acc, row) => {
+          const name = row.employees?.full_name || "Senza dipendente";
+          if (!acc[name]) acc[name] = { name, count: 0, minutes: 0 };
+          acc[name].count += 1;
+          acc[name].minutes += row.minutes || 0;
+          return acc;
+        }, {})
+      ).sort((a, b) => a.name.localeCompare(b.name));
+
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidth, 36, "F");
+      doc.setFillColor(37, 99, 235);
+      doc.rect(0, 34, pageWidth, 2, "F");
+
+      if (logoDataUrl) {
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(marginX, 7, 42, 19, 3, 3, "F");
+        doc.addImage(logoDataUrl, getImageFormat(logoDataUrl), marginX + 2, 9, 38, 15, undefined, "FAST");
+      } else {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(255, 255, 255);
+        doc.text("IDEALTECH", marginX, 18);
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(255, 255, 255);
+      doc.text("Report Timesheet", 62, 15);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(203, 213, 225);
+      doc.text(`Esportato il ${generatedAt}`, 62, 22);
+      doc.text(`Periodo: ${periodLabel}`, 62, 28);
+
+      const cardY = 44;
+      const cardW = (pageWidth - marginX * 2 - 18) / 4;
+      const cards = [
+        { label: "Record", value: String(exportRows.length), sub: "Timesheet esportati" },
+        { label: "Ore totali", value: fmtMinutes(totalExportMinutes), sub: "Periodo esportato" },
+        { label: "Dipendenti", value: String(totalsByEmployee.length), sub: "Con ore registrate" },
+        { label: ignorePeriod ? "Archivio" : "Periodo", value: periodLabel, sub: ignorePeriod ? "Senza filtro data" : "Intervallo selezionato" },
+      ];
+
+      cards.forEach((card, index) => {
+        const x = marginX + index * (cardW + 6);
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(x, cardY, cardW, 24, 3, 3, "F");
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x, cardY, cardW, 24, 3, 3, "S");
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(card.label.toUpperCase(), x + 4, cardY + 7);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(card.value.length > 22 ? 10 : 14);
+        doc.setTextColor(15, 23, 42);
+        doc.text(card.value, x + 4, cardY + 15);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text(card.sub, x + 4, cardY + 21);
+      });
+
+      autoTable(doc, {
+        startY: 76,
+        margin: { left: marginX, right: marginX },
+        theme: "plain",
+        body: [
+          ["Dipendente", employeeLabel, "Commessa", cdlLabel],
+          ["Lavorazione", lavLabel, "Ricerca", searchLabel],
+        ],
+        styles: {
+          font: "helvetica",
+          fontSize: 8.5,
+          cellPadding: { top: 1.5, right: 2, bottom: 1.5, left: 2 },
+          textColor: [51, 65, 85],
+        },
+        columnStyles: {
+          0: { fontStyle: "bold", textColor: [15, 23, 42], cellWidth: 25 },
+          1: { cellWidth: 110 },
+          2: { fontStyle: "bold", textColor: [15, 23, 42], cellWidth: 25 },
+          3: { cellWidth: "auto" },
+        },
+      });
+
+      autoTable(doc, {
+        startY: (doc.lastAutoTable?.finalY || 86) + 6,
+        margin: { left: marginX, right: marginX },
+        head: [["Riepilogo dipendente", "Record", "Ore totali"]],
+        body: totalsByEmployee.map((x) => [x.name, String(x.count), fmtMinutes(x.minutes)]),
+        theme: "grid",
+        headStyles: {
+          fillColor: [15, 23, 42],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 8.5,
+        },
+        styles: {
+          font: "helvetica",
+          fontSize: 8,
+          cellPadding: 2.2,
+          lineColor: [226, 232, 240],
+          lineWidth: 0.1,
+          textColor: [51, 65, 85],
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 100 },
+          1: { halign: "right", cellWidth: 25 },
+          2: { halign: "right", cellWidth: 35, fontStyle: "bold" },
+        },
+        tableWidth: 160,
+      });
+
+      autoTable(doc, {
+        startY: (doc.lastAutoTable?.finalY || 116) + 8,
+        margin: { top: 18, left: marginX, right: marginX, bottom: 18 },
+        head: [["Data", "Dipendente", "Dalle", "Alle", "Totale", "Commessa", "Lavorazione", "Note"]],
+        body: exportRows.map((row) => [
+          formatDateIT(row.work_date),
+          safeText(row.employees?.full_name),
+          formatTime(row.start_time),
+          formatTime(row.end_time),
+          fmtMinutes(row.minutes || 0),
+          getCdlLabel(row.cdl),
+          safeText(row.lavorazioni?.name),
+          safeText(row.note),
+        ]),
+        theme: "grid",
+        headStyles: {
+          fillColor: [37, 99, 235],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 8,
+          cellPadding: 2.2,
+        },
+        styles: {
+          font: "helvetica",
+          fontSize: 7.4,
+          cellPadding: 1.8,
+          overflow: "linebreak",
+          valign: "middle",
+          lineColor: [226, 232, 240],
+          lineWidth: 0.1,
+          textColor: [30, 41, 59],
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 20 },
+          1: { cellWidth: 34 },
+          2: { halign: "center", cellWidth: 14 },
+          3: { halign: "center", cellWidth: 14 },
+          4: { halign: "right", cellWidth: 20, fontStyle: "bold" },
+          5: { cellWidth: 54 },
+          6: { cellWidth: 40 },
+          7: { cellWidth: "auto" },
+        },
+        didDrawPage: () => {
+          const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
+
+          if (pageNumber > 1) {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text("Report Timesheet", marginX, 10);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`${periodLabel} · ${fmtMinutes(totalExportMinutes)}`, pageWidth - marginX, 10, {
+              align: "right",
+            });
+          }
+
+          drawPdfFooter(doc);
+        },
+      });
+
+      const filename = ignorePeriod
+        ? `timesheet_tutto_storico_${dayjs().format("YYYY-MM-DD")}.pdf`
+        : `timesheet_${from || "inizio"}_${to || "fine"}.pdf`;
+      doc.save(filename);
+    } catch (e2) {
+      console.error(e2);
+      setErr(e2?.message || "Errore durante la generazione del PDF");
+    } finally {
+      setExportingPdf(null);
+    }
+  }
 
   function openEditModal(row) {
     setErr("");
@@ -364,6 +722,26 @@ export default function AdminTimesheets() {
 
           <button className="btn btnPrimary" onClick={load} disabled={loading}>
             {loading ? "Carico..." : "Applica"}
+          </button>
+
+          <button
+            className="btn"
+            type="button"
+            onClick={() => exportTimesheetsPdf()}
+            disabled={loading || !!exportingPdf || !filtered.length}
+            title="Esporta in PDF i timesheet del periodo selezionato e dei filtri attuali"
+          >
+            {exportingPdf === "period" ? "Genero PDF..." : "Esporta PDF"}
+          </button>
+
+          <button
+            className="btn"
+            type="button"
+            onClick={() => exportTimesheetsPdf({ ignorePeriod: true })}
+            disabled={loading || !!exportingPdf}
+            title="Esporta tutto lo storico ignorando il filtro data, mantenendo gli altri filtri"
+          >
+            {exportingPdf === "all" ? "Genero tutto..." : "Esporta tutto"}
           </button>
 
           <div className="spacer" />
