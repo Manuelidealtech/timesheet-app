@@ -322,9 +322,9 @@ export default function Home() {
           )}
 
           {!loadingMissing && !missingError && missingEmployees.length > 0 && (
-            <div className="grid" style={{ gap: 10, marginTop: 14 }}>
+            <div className="missingEmployeesList">
               {missingEmployees.map((employee) => (
-                <div key={employee.id} className="kpi" style={{ padding: 14 }}>
+                <div key={employee.id} className="missingEmployeeCard">
                   <div style={{ fontWeight: 700 }}>{employee.full_name}</div>
                   <div className="sub" style={{ marginTop: 4 }}>
                     {employee.department

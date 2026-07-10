@@ -83,7 +83,7 @@ export default function Sidebar({ children }) {
   const departmentLabel = DEPARTMENT_LABELS[profile?.department] || null;
 
   return (
-    <div className="appShell">
+    <div className={`appShell role-${role || 'guest'}`}>
       <button
         type="button"
         className="sidebarToggle"

@@ -21,6 +21,7 @@ export default function AdminUsers() {
   const [form, setForm] = useState(initialCreate);
   const [editingId, setEditingId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const departmentOptions = useMemo(() => {
     const set = new Set(employees.map((item) => item.department).filter(Boolean));
@@ -202,22 +203,30 @@ export default function AdminUsers() {
   }
 
   async function removeUser(profile) {
-    if (!window.confirm(`Eliminare definitivamente ${profile.display_name || profile.email}?`)) return;
+    const label = profile.display_name || profile.email;
+    const confirmed = window.confirm(
+      `Eliminare definitivamente l’account di ${label}?\n\nI timesheet storici resteranno disponibili, ma l’utente non potrà più accedere.`
+    );
+    if (!confirmed) return;
     setErr('');
+    setDeletingId(profile.user_id);
 
     try {
       const { data, error } = await supabase.functions.invoke('manage-users', {
-        body: { action: 'delete', user_id: profile.user_id },
+        body: { action: 'delete', user_id: profile.user_id, preserve_history: true },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast('Utente eliminato ✅');
+      toast('Account eliminato; storico preservato ✅');
+      if (editingId === profile.user_id) resetForm();
       await loadData();
     } catch (removeError) {
       console.error(removeError);
       setErr(removeError?.message || 'Errore eliminazione utente');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -256,11 +265,12 @@ export default function AdminUsers() {
   const title = editingId ? 'Modifica utente' : 'Nuovo utente';
 
   return (
-    <div>
-      <div className="cardHeader" style={{ marginBottom: 12 }}>
-        <div>
-          <h1 className="h1">Admin — Utenti</h1>
-          <p className="sub">Crea, modifica, disattiva o elimina gli account che accedono all’app.</p>
+    <div className="adminLegacyPage adminUsersPage">
+      <div className="cardHeader adminLegacyHero" style={{ marginBottom: 12 }}>
+        <div className="adminLegacyTitleBlock">
+          <span className="adminLegacyKicker">Controllo accessi</span>
+          <h1 className="h1 adminLegacyTitle">Gestione utenti e accessi</h1>
+          <p className="sub adminLegacySubtitle">Crea, modifica, disattiva o elimina gli account da un pannello più pulito e intuitivo.</p>
         </div>
         <span className="badge">Utenti</span>
       </div>
@@ -428,8 +438,12 @@ export default function AdminUsers() {
                     <button className="btn" onClick={() => toggleActive(profile)}>
                       {profile.is_active === false ? 'Riattiva' : 'Disattiva'}
                     </button>
-                    <button className="btn btnDanger" onClick={() => removeUser(profile)}>
-                      Elimina
+                    <button
+                      className="btn btnDanger"
+                      onClick={() => removeUser(profile)}
+                      disabled={deletingId === profile.user_id}
+                    >
+                      {deletingId === profile.user_id ? 'Eliminazione…' : 'Elimina'}
                     </button>
                   </td>
                 </tr>

@@ -6,7 +6,7 @@ import { getRoleHomePath } from '../lib/access';
 export default function RequireRole({ allow, children }) {
   const { sessionLoading, profileLoading, user, role, profile } = useAuth();
 
-  if (sessionLoading || profileLoading) {
+  if (sessionLoading || (profileLoading && !profile)) {
     return (
       <div className="container">
         <div className="card">Caricamento...</div>

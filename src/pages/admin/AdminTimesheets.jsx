@@ -645,15 +645,13 @@ export default function AdminTimesheets() {
   }
 
   return (
-    <div>
-      <div className="cardHeader" style={{ marginBottom: 12 }}>
-        <div>
-          <h1 className="h1">Admin — Tutti i Timesheet</h1>
-          <p className="sub">
-            Filtri per dipendente / periodo / commessa / lavorazione + ricerca testuale
-          </p>
+    <div className="adminLegacyPage adminTimesheetsPage">
+      <div className="cardHeader adminLegacyHero" style={{ marginBottom: 12 }}>
+        <div className="adminLegacyTitleBlock">
+          <span className="adminLegacyKicker">Archivio operativo</span>
+          <h1 className="h1 adminLegacyTitle">Registro completo timesheet</h1>
+          <p className="sub adminLegacySubtitle">Filtra e controlla tutte le registrazioni con una vista più chiara, ariosa e professionale.</p>
         </div>
-
         <div className="row">
           <button className="btn" onClick={() => nav(-1)}>
             ← Indietro

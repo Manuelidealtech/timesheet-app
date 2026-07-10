@@ -115,11 +115,12 @@ export default function AdminRiassunti() {
   const totalCost = useMemo(() => rows.reduce((a,r)=>a+((r.minutes||0)/60)*(Number(r.employees?.hourly_cost||0)),0), [rows]);
 
   return (
-    <div>
-      <div className="cardHeader" style={{ marginBottom: 12 }}>
-        <div>
-          <h1 className="h1">Admin — Riassunti</h1>
-          <p className="sub">Ore e costo per commessa (usando hourly_cost dei dipendenti)</p>
+    <div className="adminLegacyPage adminSummaryPage">
+      <div className="cardHeader adminLegacyHero" style={{ marginBottom: 12 }}>
+        <div className="adminLegacyTitleBlock">
+          <span className="adminLegacyKicker">Controllo economico</span>
+          <h1 className="h1 adminLegacyTitle">Riassunti ore e costi</h1>
+          <p className="sub adminLegacySubtitle">Analizza tempi, costi e distribuzione delle attività con un colpo d’occhio più leggibile.</p>
         </div>
         <span className="badge">Costi</span>
       </div>

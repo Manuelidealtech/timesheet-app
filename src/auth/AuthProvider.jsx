@@ -85,7 +85,7 @@ export function AuthProvider({ children }) {
     if (loadingRef.current) return null;
 
     loadingRef.current = true;
-    setProfileLoading(true);
+    if (!profile) setProfileLoading(true);
 
     try {
       const { data, error } = await withTimeout(

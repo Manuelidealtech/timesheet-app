@@ -120,7 +120,7 @@ export default function Note() {
   }
 
   return (
-    <div className="notesPage">
+    <div className="container pageShell notesPage">
       <div className="notesHero">
         <div>
           <p className="notesEyebrow">Workspace personale</p>

@@ -38,6 +38,7 @@ export default function AdminAnagrafiche() {
   const [cdl, setCdl] = useState([]);
   const [lavorazioni, setLavorazioni] = useState([]);
   const [cdlFilter, setCdlFilter] = useState("all");
+  const [showArchivedEmployees, setShowArchivedEmployees] = useState(false);
 
   // create forms
   const [empName, setEmpName] = useState("");
@@ -202,11 +203,43 @@ export default function AdminAnagrafiche() {
     await loadAll();
   }
 
-  // DELETE
+  // DELETE / ARCHIVE
   async function remove(table, row) {
     setErr("");
-    const yes = window.confirm("Confermi eliminazione? (Se è già usato nei timesheet non si potrà eliminare)");
-    if (!yes) return;
+
+    if (table === "employees") {
+      const yes = window.confirm(
+        `Rimuovere ${row.full_name} dalle anagrafiche attive?\n\n` +
+        `Se esistono timesheet collegati, il dipendente verrà archiviato così lo storico resterà intatto.`
+      );
+      if (!yes) return;
+
+      const [{ count: timesheetCount, error: timesheetError }, { count: profileCount, error: profileError }] = await Promise.all([
+        supabase.from("timesheets").select("id", { count: "exact", head: true }).eq("employee_id", row.id),
+        supabase.from("profiles").select("user_id", { count: "exact", head: true }).eq("employee_id", row.id),
+      ]);
+
+      if (timesheetError) return setErr(timesheetError.message);
+      if (profileError) return setErr(profileError.message);
+
+      const hasRelations = Number(timesheetCount || 0) > 0 || Number(profileCount || 0) > 0;
+
+      if (hasRelations) {
+        const { error } = await supabase
+          .from("employees")
+          .update({ is_active: false })
+          .eq("id", row.id);
+
+        if (error) return setErr(error.message);
+
+        toast("Dipendente archiviato; storico preservato ✅");
+        await loadAll();
+        return;
+      }
+    } else {
+      const yes = window.confirm("Confermi eliminazione?");
+      if (!yes) return;
+    }
 
     const { error } = await supabase.from(table).delete().eq("id", row.id);
     if (error) return setErr(error.message);
@@ -222,34 +255,25 @@ export default function AdminAnagrafiche() {
   });
 
   function renderStatusBadge(isActive) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minWidth: 86,
-        padding: "8px 12px",
-        borderRadius: 999,
-        fontWeight: 700,
-        fontSize: 13,
-        letterSpacing: 0.2,
-        background: isActive ? "rgba(34, 197, 94, 0.14)" : "rgba(239, 68, 68, 0.14)",
-        color: isActive ? "#86efac" : "#fca5a5",
-        border: isActive ? "1px solid rgba(34, 197, 94, 0.35)" : "1px solid rgba(239, 68, 68, 0.35)",
-      }}
-    >
-      {isActive ? "Attiva" : "Chiusa"}
-    </span>
-  );
-}
+    return (
+      <span className={`registryStatusBadge ${isActive ? "isActive" : "isInactive"}`}>
+        <span className="registryStatusDot" />
+        {isActive ? "Attiva" : "Chiusa"}
+      </span>
+    );
+  }
+
+  const visibleEmployees = showArchivedEmployees
+    ? employees
+    : employees.filter((employee) => employee.is_active !== false);
 
   return (
-    <div>
-      <div className="cardHeader" style={{ marginBottom: 12 }}>
-        <div>
-          <h1 className="h1">Admin — Anagrafiche</h1>
-          <p className="sub">Gestisci dipendenti, commesse e lavorazioni (CRUD completo)</p>
+    <div className="adminLegacyPage adminRegistryPage">
+      <div className="cardHeader adminLegacyHero" style={{ marginBottom: 12 }}>
+        <div className="adminLegacyTitleBlock">
+          <span className="adminLegacyKicker">Configurazione base</span>
+          <h1 className="h1 adminLegacyTitle">Anagrafiche aziendali</h1>
+          <p className="sub adminLegacySubtitle">Gestisci dipendenti, commesse e lavorazioni in un pannello più ordinato e moderno.</p>
         </div>
         <span className="badge">Setup</span>
       </div>
@@ -293,8 +317,15 @@ export default function AdminAnagrafiche() {
               </div>
             </div>
 
-            <div className="row" style={{ marginTop: 12 }}>
+            <div className="row registryEmployeeToolbar" style={{ marginTop: 12 }}>
               <button className="btn btnPrimary" onClick={addEmployee}>Aggiungi Dipendente</button>
+              <button
+                type="button"
+                className={`btn registryArchiveToggle ${showArchivedEmployees ? "isActive" : ""}`}
+                onClick={() => setShowArchivedEmployees((current) => !current)}
+              >
+                {showArchivedEmployees ? "Nascondi archiviati" : "Mostra archiviati"}
+              </button>
             </div>
 
             <div className="tableWrap" style={{ marginTop: 14 }}>
@@ -309,23 +340,28 @@ export default function AdminAnagrafiche() {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((x) => (
+                  {visibleEmployees.map((x) => (
                     <tr key={x.id}>
                       <td>{x.full_name}</td>
                       <td>{x.department === 'ufficio' ? 'Ufficio' : 'Produzione'}</td>
                       <td>{Number(x.hourly_cost || 0).toFixed(2)} €</td>
                       <td>
-                        <button className="btn iconBtn" onClick={() => toggle("employees", x)}>
-                          {x.is_active ? "Disattiva" : "Attiva"}
+                        <button
+                          className={`registryStateButton ${x.is_active ? "isActive" : "isInactive"}`}
+                          onClick={() => toggle("employees", x)}
+                          type="button"
+                        >
+                          <span className="registryStateIcon">{x.is_active ? "✓" : "↻"}</span>
+                          <span>{x.is_active ? "Disattiva" : "Riattiva"}</span>
                         </button>
                       </td>
                       <td className="actionsCell">
                         <button className="btn btnWarn btnIcon" title="Modifica" onClick={() => openEdit("employees", x)}>✏️</button>
-                        <button className="btn btnDanger btnIcon" title="Elimina" onClick={() => remove("employees", x)}>🗑️</button>
+                        <button className="btn btnDanger btnIcon" title={x.is_active ? "Archivia o elimina" : "Elimina definitivamente se non collegato"} onClick={() => remove("employees", x)}>🗑️</button>
                       </td>
                     </tr>
                   ))}
-                  {!employees.length && (
+                  {!visibleEmployees.length && (
                     <tr><td colSpan="5" style={{ textAlign: "center", opacity: .7, padding: 18 }}>Nessun dipendente</td></tr>
                   )}
                 </tbody>
@@ -396,8 +432,13 @@ export default function AdminAnagrafiche() {
                       <td>{x.client}</td>
                       <td>{renderStatusBadge(x.is_active)}</td>
                       <td>
-                        <button className="btn iconBtn" onClick={() => toggle("cdl", x)}>
-                          {x.is_active ? "Disattiva" : "Riattiva"}
+                        <button
+                          className={`registryStateButton ${x.is_active ? "isActive" : "isInactive"}`}
+                          onClick={() => toggle("cdl", x)}
+                          type="button"
+                        >
+                          <span className="registryStateIcon">{x.is_active ? "✓" : "↻"}</span>
+                          <span>{x.is_active ? "Disattiva" : "Riattiva"}</span>
                         </button>
                       </td>
                       <td className="actionsCell">
@@ -442,8 +483,13 @@ export default function AdminAnagrafiche() {
                     <tr key={x.id}>
                       <td>{x.name}</td>
                       <td>
-                        <button className="btn iconBtn" onClick={() => toggle("lavorazioni", x)}>
-                          {x.is_active ? "Disattiva" : "Attiva"}
+                        <button
+                          className={`registryStateButton ${x.is_active ? "isActive" : "isInactive"}`}
+                          onClick={() => toggle("lavorazioni", x)}
+                          type="button"
+                        >
+                          <span className="registryStateIcon">{x.is_active ? "✓" : "↻"}</span>
+                          <span>{x.is_active ? "Disattiva" : "Riattiva"}</span>
                         </button>
                       </td>
                       <td className="actionsCell">

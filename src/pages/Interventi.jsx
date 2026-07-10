@@ -532,58 +532,62 @@ export default function Interventi() {
 
         <div className="pageBody">
           <div className="interventionLayout">
-            <div className="card interventionHistoryCard">
-              <div className="cardHeader">
+            <details className="card interventionHistoryCard">
+              <summary className="interventionHistorySummary">
                 <div>
                   <div className="sub">Archivio</div>
-                  <div style={{ fontWeight: 800, marginTop: 4 }}>Fogli salvati</div>
+                  <div className="interventionHistoryTitle">Fogli salvati</div>
+                  <div className="interventionHistoryHint">Apri per consultare o modificare i fogli già creati</div>
                 </div>
-                <span className="badge">{reports.length}</span>
+                <div className="interventionHistorySummaryMeta">
+                  <span className="badge">{reports.length}</span>
+                  <span className="interventionHistoryChevron" aria-hidden="true">⌄</span>
+                </div>
+              </summary>
+
+              <div className="interventionHistoryContent">
+                {loading ? (
+                  <div className="sub">Caricamento...</div>
+                ) : reports.length ? (
+                  <div className="interventionHistoryList">
+                    {reports.map((report) => (
+                      <div
+                        key={report.id}
+                        className={`interventionHistoryItem ${String(selectedId) === String(report.id) ? "active" : ""}`}
+                      >
+                        <button
+                          type="button"
+                          className="interventionHistoryMain"
+                          onClick={() => setSelectedId(report.id)}
+                        >
+                          <div className="interventionHistoryTop">
+                            <strong>{report.report_number || "Senza numero"}</strong>
+                            <span>{report.report_date || ""}</span>
+                          </div>
+                          <div className="interventionHistoryClient">
+                            {report.client_name || "Cliente non indicato"}
+                          </div>
+                          <div className="interventionHistoryMeta">
+                            <span>{report.city || "—"}</span>
+                            <span>{report.pdf_sent_at ? "Mail inviata" : "Da inviare"}</span>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn btnDanger interventionDeleteBtn"
+                          onClick={() => handleDeleteReport(report.id)}
+                        >
+                          Elimina
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="sub">Nessun foglio intervento salvato.</div>
+                )}
               </div>
-
-              <hr className="sep" />
-
-              {loading ? (
-                <div className="sub">Caricamento...</div>
-              ) : reports.length ? (
-                <div className="interventionHistoryList">
-                  {reports.map((report) => (
-                    <div
-                      key={report.id}
-                      className={`interventionHistoryItem ${selectedId === report.id ? "active" : ""}`}
-                    >
-                      <button
-                        type="button"
-                        className="interventionHistoryMain"
-                        onClick={() => setSelectedId(report.id)}
-                      >
-                        <div className="interventionHistoryTop">
-                          <strong>{report.report_number || "Senza numero"}</strong>
-                          <span>{report.report_date || ""}</span>
-                        </div>
-                        <div className="interventionHistoryClient">
-                          {report.client_name || "Cliente non indicato"}
-                        </div>
-                        <div className="interventionHistoryMeta">
-                          <span>{report.city || "—"}</span>
-                          <span>{report.pdf_sent_at ? "Mail inviata" : "Da inviare"}</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn btnDanger interventionDeleteBtn"
-                        onClick={() => handleDeleteReport(report.id)}
-                      >
-                        Elimina
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="sub">Nessun foglio intervento salvato.</div>
-              )}
-            </div>
+            </details>
 
             <form className="card interventionFormCard" onSubmit={handleSave}>
               <div className="formSection">

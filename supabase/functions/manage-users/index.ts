@@ -171,6 +171,30 @@ Deno.serve(async (req) => {
         );
       }
 
+      if (userId === callerUserId) {
+        return new Response(
+          JSON.stringify({ error: 'Non puoi eliminare l’account amministratore con cui sei collegato' }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      // Lo storico aziendale non viene cancellato: i record restano collegati al
+      // dipendente, mentre i riferimenti all’account Auth vengono sganciati.
+      const cleanupOperations = [
+        supabaseAdmin.from('timesheets').update({ created_by: null }).eq('created_by', userId),
+        supabaseAdmin.from('intervention_reports').update({ created_by: null }).eq('created_by', userId),
+        supabaseAdmin.from('daily_notes').delete().eq('user_id', userId),
+      ];
+
+      const cleanupResults = await Promise.all(cleanupOperations);
+      const cleanupError = cleanupResults.find((result) => result.error)?.error;
+      if (cleanupError) {
+        return new Response(
+          JSON.stringify({ error: `Impossibile scollegare i dati dell’utente: ${cleanupError.message}` }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .delete()
@@ -193,7 +217,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ ok: true }),
+        JSON.stringify({ ok: true, history_preserved: true }),
         { status: 200, headers: corsHeaders }
       );
     }
