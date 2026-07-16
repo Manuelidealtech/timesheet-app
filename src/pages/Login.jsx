@@ -35,7 +35,7 @@ export default function Login() {
         <aside className="loginIntro">
           <div className="loginBrandMark">IT</div>
           <span className="loginEyebrow">Idealtech workspace</span>
-          <h1>Il lavoro di ogni giorno, finalmente in ordine.</h1>
+          <h1>Il lavoro di ogni giorno, registrato e analizzato.</h1>
           <p>
             Registra le attività, consulta lo storico e controlla ore e commesse da un’unica area protetta.
           </p>
