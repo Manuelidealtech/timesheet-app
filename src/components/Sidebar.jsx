@@ -33,6 +33,7 @@ function buildMenu(role) {
       { to: '/admin/timesheets', label: 'Timesheet' },
       { to: '/admin/riassunti', label: 'Riassunti' },
       { to: '/admin/anagrafiche', label: 'Anagrafiche' },
+      { to: '/admin/commesse', label: 'Gestione commesse' },
       { to: '/admin/users', label: 'Utenti' },
       { to: '/storico', label: 'Storico' },
       { to: '/interventi', label: 'Fogli intervento' },

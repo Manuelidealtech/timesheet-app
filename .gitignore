@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Credenziali agent locale Gestione commesse
+server/.env.commesse

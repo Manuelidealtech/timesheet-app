@@ -1,0 +1,109 @@
+/* Gestione commesse — dashboard admin compatta e ad alta leggibilità */
+.commessePage { display:grid; gap:16px; }
+.commesseHero { margin:0; }
+.commesseHeroBadge small { display:block; margin-top:5px; color:var(--muted); font-size:11px; }
+
+.commessaKpiGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.commessaKpi { --status:#7c6cff; position:relative; overflow:hidden; min-height:118px; padding:17px 18px; border:1px solid var(--stroke); border-radius:20px; background:linear-gradient(145deg,var(--panel),color-mix(in srgb,var(--status) 5%,var(--panel))); box-shadow:var(--shadow-soft); }
+.commessaKpi::before { content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--status); }
+.commessaKpi::after { content:""; position:absolute; width:110px; height:110px; right:-42px; top:-58px; border-radius:50%; background:color-mix(in srgb,var(--status) 13%,transparent); }
+.commessaKpi > * { position:relative; z-index:1; display:block; }
+.commessaKpi span { color:var(--muted); font-size:10px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; }
+.commessaKpi strong { margin-top:10px; font-size:31px; line-height:1; letter-spacing:-.04em; }
+.commessaKpi small { margin-top:8px; color:var(--text-soft); font-size:11px; }
+.commessaKpi.total { --status:#7c6cff; }.commessaKpi.complete { --status:#26c98b; }.commessaKpi.almost { --status:#19b8d4; }.commessaKpi.attention { --status:#ff8e55; }
+
+.commessaControls { display:grid; grid-template-columns:minmax(240px,1.2fr) auto minmax(155px,.55fr) auto; align-items:center; gap:10px; padding:12px; border:1px solid var(--stroke); border-radius:18px; background:var(--panel); box-shadow:var(--shadow-soft); }
+.commessaSearchWrap { min-width:0; display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid var(--stroke); border-radius:13px; background:var(--input-bg); }
+.commessaSearchWrap > span { color:var(--muted); font-size:21px; transform:rotate(-18deg); }
+.commessaSearchWrap input { width:100%; min-width:0; height:43px; padding:0; border:0!important; outline:0; background:transparent; color:var(--text); box-shadow:none!important; }
+.commessaFilterTabs { display:flex; align-items:center; gap:5px; padding:4px; overflow-x:auto; border:1px solid var(--stroke); border-radius:13px; background:var(--panel-soft); scrollbar-width:none; }
+.commessaFilterTabs::-webkit-scrollbar { display:none; }
+.commessaFilterTabs button { flex:0 0 auto; min-height:34px; padding:6px 9px; border:0; border-radius:9px; color:var(--text-soft); background:transparent; cursor:pointer; font-size:11px; font-weight:800; white-space:nowrap; }
+.commessaFilterTabs button.active { color:var(--text); background:var(--panel-strong); box-shadow:0 4px 14px rgba(0,0,0,.12); }
+.commessaSort { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:7px; }
+.commessaSort > span { color:var(--muted); font-size:10px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+.commessaSort select { min-width:0; height:43px; padding:0 30px 0 10px; border-radius:13px; font-size:12px; }
+.commessaActions { display:flex; gap:7px; }
+.commessaActions .btn { min-height:43px; white-space:nowrap; }
+.commessaScanButton { min-width:135px; }
+.commessaSpinner { width:14px; height:14px; display:inline-block; margin-right:7px; border:2px solid color-mix(in srgb,currentColor 28%,transparent); border-top-color:currentColor; border-radius:50%; vertical-align:-2px; animation:commessa-spin .75s linear infinite; }
+.commessaSpinner.large { width:27px; height:27px; margin:0; border-width:3px; }
+@keyframes commessa-spin { to { transform:rotate(360deg); } }
+
+.commessaNotice { margin:0; }
+.commessaResultsHead { display:flex; justify-content:space-between; gap:12px; padding:0 3px; color:var(--muted); font-size:11px; }
+.commessaResultsHead b { color:var(--text); }
+.commessaCardGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-items:start; }
+
+.commessaCard { --health:#ff5f70; position:relative; overflow:hidden; min-width:0; padding:16px; border:1px solid color-mix(in srgb,var(--health) 25%,var(--stroke)); border-radius:20px; background:linear-gradient(150deg,var(--panel),color-mix(in srgb,var(--health) 4%,var(--panel))); box-shadow:var(--shadow-soft); }
+.commessaCard.severity-complete { --health:#2bc990; }.commessaCard.severity-almost { --health:#18b7d2; }.commessaCard.severity-attention { --health:#f0bd3d; }.commessaCard.severity-late { --health:#ff8c50; }.commessaCard.severity-critical { --health:#ff5f70; }
+.commessaCardAccent { position:absolute; inset:0 auto 0 0; width:4px; background:var(--health); }
+.commessaCard::after { content:""; position:absolute; width:150px; height:150px; right:-70px; top:-86px; border-radius:50%; background:color-mix(in srgb,var(--health) 10%,transparent); pointer-events:none; }
+.commessaCardHeader { position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:12px; }
+.commessaCardIdentity { min-width:0; }
+.commessaCodeRow { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.commessaCode { display:inline-flex; align-items:center; min-height:25px; padding:4px 8px; border:1px solid color-mix(in srgb,var(--health) 28%,var(--stroke)); border-radius:999px; color:var(--health); background:color-mix(in srgb,var(--health) 8%,transparent); font-size:10px; font-weight:950; letter-spacing:.06em; }
+.commessaStateBadge { display:inline-flex; min-height:25px; align-items:center; padding:4px 8px; border-radius:999px; color:var(--text-soft); background:var(--panel-soft); font-size:10px; font-weight:800; }
+.commessaCard h2 { max-width:100%; margin:9px 0 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:16px; line-height:1.25; letter-spacing:-.02em; }
+.commessaCardIdentity p { margin:4px 0 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:11px; }
+.commessaPercent { min-width:62px; text-align:right; }
+.commessaPercent strong,.commessaPercent span { display:block; }
+.commessaPercent strong { color:var(--health); font-size:23px; line-height:1; letter-spacing:-.05em; }
+.commessaPercent span { margin-top:4px; color:var(--muted); font-size:10px; font-weight:800; }
+.commessaProgress { position:relative; z-index:1; height:5px; margin:13px 0; overflow:hidden; border-radius:999px; background:var(--panel-soft); }
+.commessaProgress i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--health),color-mix(in srgb,var(--health) 70%,white)); transition:width .3s ease; }
+
+.commessaFolderGrid { position:relative; z-index:1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.commessaFolderCheck { min-width:0; min-height:48px; display:grid; grid-template-columns:21px minmax(0,1fr); align-items:center; gap:6px; padding:7px; border:1px solid var(--stroke); border-radius:10px; background:var(--panel-soft); }
+.commessaFolderCheck.ok { border-color:color-mix(in srgb,#2bc990 25%,var(--stroke)); background:color-mix(in srgb,#2bc990 6%,var(--panel-soft)); }
+.commessaFolderCheck.missing { border-color:color-mix(in srgb,#ff5f70 25%,var(--stroke)); background:color-mix(in srgb,#ff5f70 6%,var(--panel-soft)); }
+.commessaFolderIcon { width:19px; height:19px; display:grid; place-items:center; border-radius:6px; color:#fff; background:#ff5f70; font-size:10px; font-weight:950; }
+.commessaFolderCheck.ok .commessaFolderIcon { background:#25b981; }
+.commessaFolderText { min-width:0; }
+.commessaFolderText b,.commessaFolderText small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.commessaFolderText b { font-size:9.7px; line-height:1.2; }
+.commessaFolderText small { margin-top:3px; color:var(--muted); font-size:9px; }
+.commessaFolderCheck.ok .commessaFolderText small { color:color-mix(in srgb,#2bc990 78%,var(--text)); }
+.commessaFolderCheck.missing .commessaFolderText small { color:color-mix(in srgb,#ff5f70 78%,var(--text)); }
+.commessaNoChecks { grid-column:1/-1; padding:13px; border:1px dashed var(--stroke); border-radius:11px; color:var(--muted); font-size:11px; text-align:center; }
+.commessaScanError { position:relative; z-index:1; display:grid; gap:4px; padding:11px 12px; border:1px solid color-mix(in srgb,var(--danger) 35%,var(--stroke)); border-radius:11px; background:color-mix(in srgb,var(--danger) 8%,var(--panel-soft)); }
+.commessaScanError b { color:var(--danger); font-size:11px; }.commessaScanError span { color:var(--text-soft); font-size:10px; }
+.commessaCardFooter { position:relative; z-index:1; display:flex; justify-content:space-between; gap:10px; margin-top:12px; padding-top:10px; border-top:1px solid var(--stroke); color:var(--muted); font-size:9.8px; }
+.commessaCardFooter b { color:var(--text-soft); }
+
+.commessaLoading,.commessaEmpty { min-height:260px; display:grid; place-items:center; align-content:center; gap:10px; padding:30px; border:1px dashed var(--stroke); border-radius:20px; color:var(--muted); background:var(--panel); text-align:center; }
+.commessaLoading b { color:var(--text-soft); }
+.commessaEmptyIcon { font-size:34px; }.commessaEmpty h2 { margin:0; color:var(--text); font-size:18px; }.commessaEmpty p { max-width:620px; margin:0; font-size:12px; }
+
+@media (max-width:1320px) {
+  .commessaControls { grid-template-columns:minmax(230px,1fr) minmax(0,1.3fr) auto; }
+  .commessaActions { grid-column:1/-1; justify-content:flex-end; }
+}
+@media (max-width:1160px) {
+  .commessaFolderGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:900px) {
+  .commessaKpiGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .commessaCardGrid { grid-template-columns:1fr; }
+  .commessaFolderGrid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .commessaControls { grid-template-columns:1fr; }
+  .commessaActions { grid-column:auto; justify-content:stretch; }
+  .commessaActions .btn { flex:1; }
+  .commessaSort { grid-template-columns:60px 1fr; }
+}
+@media (max-width:620px) {
+  .commessaKpiGrid { grid-template-columns:1fr 1fr; gap:8px; }
+  .commessaKpi { min-height:105px; padding:14px; border-radius:16px; }
+  .commessaKpi strong { font-size:26px; }
+  .commessaFolderGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .commessaCard { padding:13px; border-radius:17px; }
+  .commessaCardFooter,.commessaResultsHead { flex-direction:column; }
+  .commessaFilterTabs { width:100%; }
+  .commessaActions { display:grid; grid-template-columns:1fr; }
+}
+@media (max-width:420px) {
+  .commessaKpiGrid { grid-template-columns:1fr; }
+  .commessaFolderGrid { grid-template-columns:1fr 1fr; }
+  .commessaFolderCheck { min-height:45px; }
+}

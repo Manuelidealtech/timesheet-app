@@ -15,6 +15,7 @@ import AdminTimesheets from './pages/admin/AdminTimesheets';
 import AdminRiassunti from './pages/admin/AdminRiassunti';
 import AdminAnagrafiche from './pages/admin/AdminAnagrafiche';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminCommesse from './pages/admin/AdminCommesse';
 import Note from './pages/Note';
 
 function AppRoutes() {
@@ -99,6 +100,15 @@ function AppRoutes() {
         element={
           <RequireRole allow={['admin']}>
             <AdminUsers />
+          </RequireRole>
+        }
+      />
+
+      <Route
+        path="/admin/commesse"
+        element={
+          <RequireRole allow={['admin']}>
+            <AdminCommesse />
           </RequireRole>
         }
       />

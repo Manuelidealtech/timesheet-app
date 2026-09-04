@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { DEPARTMENT_LABELS } from "../../lib/access";
 
 function fmtMinutes(m) {
   const h = Math.floor(m / 60);
@@ -60,6 +61,7 @@ function rowMatchesSearch(row, query) {
   const searchText = [
     row.work_date,
     row.employees?.full_name,
+    DEPARTMENT_LABELS[row.department] || row.department,
     row.cdl?.code,
     row.cdl?.name,
     row.lavorazioni?.name,
@@ -121,6 +123,7 @@ export default function AdminTimesheets() {
   const [cdl, setCdl] = useState([]);
   const [lavorazioni, setLavorazioni] = useState([]);
 
+  const [department, setDepartment] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [cdlId, setCdlId] = useState("");
   const [lavId, setLavId] = useState("");
@@ -153,7 +156,7 @@ export default function AdminTimesheets() {
     const [e, c, l] = await Promise.all([
       supabase
         .from("employees")
-        .select("id, full_name")
+        .select("id, full_name, department")
         .eq("is_active", true)
         .order("full_name"),
 
@@ -193,6 +196,7 @@ export default function AdminTimesheets() {
           end_time,
           minutes,
           note,
+          department,
           employee_id,
           cdl_id,
           lavorazione_id,
@@ -205,6 +209,7 @@ export default function AdminTimesheets() {
         .order("work_date", { ascending: false })
         .order("start_time", { ascending: false });
 
+      if (department) qy = qy.eq("department", department);
       if (employeeId) qy = qy.eq("employee_id", Number(employeeId));
       if (cdlId) qy = qy.eq("cdl_id", Number(cdlId));
       if (lavId) qy = qy.eq("lavorazione_id", Number(lavId));
@@ -233,6 +238,11 @@ export default function AdminTimesheets() {
     // eslint-disable-next-line
   }, []);
 
+  const visibleEmployees = useMemo(() => {
+    if (!department) return employees;
+    return employees.filter((employee) => employee.department === department);
+  }, [employees, department]);
+
   const filtered = useMemo(() => rows.filter((row) => rowMatchesSearch(row, q)), [rows, q]);
 
   const totalMinutes = useMemo(
@@ -251,6 +261,7 @@ export default function AdminTimesheets() {
         end_time,
         minutes,
         note,
+        department,
         employee_id,
         cdl_id,
         lavorazione_id,
@@ -266,6 +277,7 @@ export default function AdminTimesheets() {
       qy = qy.gte("work_date", from).lte("work_date", to);
     }
 
+    if (department) qy = qy.eq("department", department);
     if (employeeId) qy = qy.eq("employee_id", Number(employeeId));
     if (cdlId) qy = qy.eq("cdl_id", Number(cdlId));
     if (lavId) qy = qy.eq("lavorazione_id", Number(lavId));
@@ -316,6 +328,7 @@ export default function AdminTimesheets() {
       const logoDataUrl = await loadImageAsDataUrl(PDF_LOGO_PATH);
       const generatedAt = dayjs().format("DD/MM/YYYY HH:mm");
 
+      const departmentLabel = department ? (DEPARTMENT_LABELS[department] || department) : "Tutte le sezioni";
       const employeeLabel = getSelectedLabel(
         employees,
         employeeId,
@@ -400,8 +413,9 @@ export default function AdminTimesheets() {
         margin: { left: marginX, right: marginX },
         theme: "plain",
         body: [
-          ["Dipendente", employeeLabel, "Commessa", cdlLabel],
-          ["Lavorazione", lavLabel, "Ricerca", searchLabel],
+          ["Sezione", departmentLabel, "Dipendente", employeeLabel],
+          ["Commessa", cdlLabel, "Lavorazione", lavLabel],
+          ["Ricerca", searchLabel, "Periodo", periodLabel],
         ],
         styles: {
           font: "helvetica",
@@ -449,10 +463,11 @@ export default function AdminTimesheets() {
       autoTable(doc, {
         startY: (doc.lastAutoTable?.finalY || 116) + 8,
         margin: { top: 18, left: marginX, right: marginX, bottom: 18 },
-        head: [["Data", "Dipendente", "Dalle", "Alle", "Totale", "Commessa", "Lavorazione", "Note"]],
+        head: [["Data", "Dipendente", "Sezione", "Dalle", "Alle", "Totale", "Commessa", "Lavorazione", "Note"]],
         body: exportRows.map((row) => [
           formatDateIT(row.work_date),
           safeText(row.employees?.full_name),
+          safeText(DEPARTMENT_LABELS[row.department] || row.department),
           formatTime(row.start_time),
           formatTime(row.end_time),
           fmtMinutes(row.minutes || 0),
@@ -480,14 +495,15 @@ export default function AdminTimesheets() {
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 34 },
-          2: { halign: "center", cellWidth: 14 },
-          3: { halign: "center", cellWidth: 14 },
-          4: { halign: "right", cellWidth: 20, fontStyle: "bold" },
-          5: { cellWidth: 54 },
-          6: { cellWidth: 40 },
-          7: { cellWidth: "auto" },
+          0: { cellWidth: 18 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 22 },
+          3: { halign: "center", cellWidth: 13 },
+          4: { halign: "center", cellWidth: 13 },
+          5: { halign: "right", cellWidth: 18, fontStyle: "bold" },
+          6: { cellWidth: 46 },
+          7: { cellWidth: 34 },
+          8: { cellWidth: "auto" },
         },
         didDrawPage: () => {
           const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
@@ -662,11 +678,33 @@ export default function AdminTimesheets() {
 
       <div className="card">
         <div className="row" style={{ alignItems: "flex-end" }}>
+          <div className="formGroup" style={{ minWidth: 180 }}>
+            <label>Sezione</label>
+            <select
+              value={department}
+              onChange={(e) => {
+                const nextDepartment = e.target.value;
+                setDepartment(nextDepartment);
+
+                if (employeeId) {
+                  const selectedEmployee = employees.find((employee) => String(employee.id) === String(employeeId));
+                  if (nextDepartment && selectedEmployee?.department !== nextDepartment) {
+                    setEmployeeId("");
+                  }
+                }
+              }}
+            >
+              <option value="">Tutte</option>
+              <option value="produzione">Produzione</option>
+              <option value="ufficio">Ufficio</option>
+            </select>
+          </div>
+
           <div className="formGroup" style={{ minWidth: 240 }}>
             <label>Dipendente</label>
             <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
               <option value="">Tutti</option>
-              {employees.map((x) => (
+              {visibleEmployees.map((x) => (
                 <option key={x.id} value={x.id}>
                   {x.full_name}
                 </option>
@@ -756,6 +794,7 @@ export default function AdminTimesheets() {
               <tr>
                 <th>Data</th>
                 <th>Dipendente</th>
+                <th>Sezione</th>
                 <th>Dalle</th>
                 <th>Alle</th>
                 <th>Totale</th>
@@ -771,6 +810,7 @@ export default function AdminTimesheets() {
                 <tr key={r.id}>
                   <td>{r.work_date}</td>
                   <td>{r.employees?.full_name}</td>
+                  <td>{DEPARTMENT_LABELS[r.department] || r.department || "—"}</td>
                   <td>{String(r.start_time).slice(0, 5)}</td>
                   <td>{String(r.end_time).slice(0, 5)}</td>
                   <td>{fmtMinutes(r.minutes || 0)}</td>
@@ -808,7 +848,7 @@ export default function AdminTimesheets() {
 
               {!filtered.length && !loading && (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: "center", opacity: 0.7, padding: 18 }}>
+                  <td colSpan="10" style={{ textAlign: "center", opacity: 0.7, padding: 18 }}>
                     Nessun record con questi filtri.
                   </td>
                 </tr>
