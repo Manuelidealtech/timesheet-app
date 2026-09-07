@@ -64,6 +64,7 @@ const EXPECTED_FOLDERS = [
 ];
 
 // Cartelle tecniche presenti nella root che NON sono commesse.
+// Restano escluse anche se in futuro dovessero cambiare altre regole di riconoscimento.
 const IGNORED_ROOT_FOLDERS = new Set([
   'costi',
   '01_directory di base da copiare',
@@ -73,16 +74,13 @@ function isCommessaRootFolder(entry) {
   if (!entry.isDirectory()) return false;
 
   const folderName = String(entry.name || '').trim();
-
   if (!folderName || folderName.startsWith('.')) return false;
 
-  // Esclusioni esplicite
-  if (IGNORED_ROOT_FOLDERS.has(folderName.toLowerCase())) {
-    return false;
-  }
+  // Esclusioni esplicite delle cartelle tecniche.
+  if (IGNORED_ROOT_FOLDERS.has(folderName.toLowerCase())) return false;
 
-  // Una vera commessa deve iniziare con un codice di 4 cifre
-  // Esempio: 0631 (2633-2026) LINEA TRAPPOLE TOPI - ZAPI
+  // Le commesse aziendali valide iniziano con un codice di 4 cifre
+  // (es. "0631 (2633-2026) LINEA TRAPPOLE TOPI - ZAPI").
   return /^\d{4}(?=\s|\(|-|_|$)/.test(folderName);
 }
 
@@ -261,6 +259,88 @@ async function getCdlRows() {
   return data || [];
 }
 
+// Mantiene la tabella CDL allineata alle cartelle commessa realmente presenti sul file server.
+// In questo modo il menu a tendina del timesheet usa la stessa sorgente della Gestione Commesse:
+// se compare una nuova cartella (es. 0631), viene creata/riattivata automaticamente anche in CDL.
+async function syncCdlFromCommessaFolders(commessaFolders) {
+  const cdlRows = await getCdlRows();
+  let inserted = 0;
+  let reactivated = 0;
+  let enriched = 0;
+
+  for (const folderName of commessaFolders) {
+    const parsed = parseCommessaFolder(folderName);
+    let matched = findMatchingCdl(folderName, parsed, cdlRows);
+
+    if (!matched) {
+      const payload = {
+        code: parsed.code,
+        name: parsed.name,
+        client: parsed.client,
+        is_active: true,
+      };
+
+      const { data, error } = await supabase
+        .from('cdl')
+        .insert(payload)
+        .select('id, code, name, client, is_active')
+        .single();
+
+      if (error) {
+        throw new Error(`Creazione CDL ${folderName} fallita: ${error.message}`);
+      }
+
+      cdlRows.push(data);
+      inserted += 1;
+      continue;
+    }
+
+    const patch = {};
+
+    if (matched.is_active !== true) {
+      patch.is_active = true;
+    }
+
+    // Completa solo eventuali dati mancanti senza sovrascrivere descrizioni
+    // che potrebbero essere state personalizzate manualmente in anagrafica.
+    if (!String(matched.code || '').trim() && parsed.code) {
+      patch.code = parsed.code;
+    }
+    if (!String(matched.name || '').trim() && parsed.name) {
+      patch.name = parsed.name;
+    }
+    if (!String(matched.client || '').trim() && parsed.client) {
+      patch.client = parsed.client;
+    }
+
+    if (Object.keys(patch).length) {
+      const { data, error } = await supabase
+        .from('cdl')
+        .update(patch)
+        .eq('id', matched.id)
+        .select('id, code, name, client, is_active')
+        .single();
+
+      if (error) {
+        throw new Error(`Aggiornamento CDL ${folderName} fallito: ${error.message}`);
+      }
+
+      const index = cdlRows.findIndex((row) => row.id === matched.id);
+      if (index >= 0) cdlRows[index] = data;
+      matched = data;
+
+      if (patch.is_active === true) reactivated += 1;
+      if (Object.keys(patch).some((key) => key !== 'is_active')) enriched += 1;
+    }
+  }
+
+  if (inserted || reactivated || enriched) {
+    console.log(`  Sincronizzazione CDL: ${inserted} create, ${reactivated} riattivate, ${enriched} completate.`);
+  }
+
+  return cdlRows;
+}
+
 async function upsertCommessaStatus(folderName, cdlRows) {
   const commessaPath = path.join(COMMESSE_ROOT_PATH, folderName);
   const parsed = parseCommessaFolder(folderName);
@@ -341,16 +421,14 @@ async function scanAllCommesse(reason = 'automatico') {
   console.log(`Root: ${COMMESSE_ROOT_PATH}`);
 
   const entries = await fs.readdir(COMMESSE_ROOT_PATH, { withFileTypes: true });
-
   const commessaFolders = entries
     .filter(isCommessaRootFolder)
     .map((entry) => entry.name)
-    .sort((a, b) => a.localeCompare(b, 'it', {
-      numeric: true,
-      sensitivity: 'base',
-    }));
+    .sort((a, b) => a.localeCompare(b, 'it', { numeric: true, sensitivity: 'base' }));
 
-  const cdlRows = await getCdlRows();
+  // Prima allineiamo l'anagrafica CDL alle cartelle reali del server.
+  // La stessa lista alimenta poi sia Gestione Commesse sia i menu Timesheet.
+  const cdlRows = await syncCdlFromCommessaFolders(commessaFolders);
 
   for (const folderName of commessaFolders) {
     await upsertCommessaStatus(folderName, cdlRows);

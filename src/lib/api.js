@@ -16,6 +16,7 @@ export async function fetchCdl() {
     .from("cdl")
     .select("id, code, name, is_active")
     .eq("is_active", true)
+    .order("code", { ascending: true })
     .order("name", { ascending: true });
 
   if (error) throw error;

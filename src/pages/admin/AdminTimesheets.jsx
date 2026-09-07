@@ -164,13 +164,14 @@ export default function AdminTimesheets() {
         .from("cdl")
         .select("id, code, name")
         .eq("is_active", true)
-        .order("name"),
+        .order("code", { ascending: true })
+        .order("name", { ascending: true }),
 
       supabase
         .from("lavorazioni")
         .select("id, name")
         .eq("is_active", true)
-        .order("name"),
+        .order("name", { ascending: true }),
     ]);
 
     if (e.error) throw e.error;

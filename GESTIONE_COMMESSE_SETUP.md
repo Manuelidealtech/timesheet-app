@@ -100,3 +100,20 @@ Prova comunque ad abbinarla a `cdl` usando numero/nome per riutilizzare il nome 
 ## Sicurezza
 
 La pagina React è protetta dalla route `RequireRole(['admin'])` e le tabelle hanno RLS admin-only. Gli utenti produzione/ufficio non possono leggere i risultati nemmeno interrogando Supabase direttamente con la chiave anonima.
+
+## Sincronizzazione automatica con il menu Timesheet
+
+Dalla versione aggiornata, la stessa scansione delle cartelle usata da **Gestione commesse** mantiene automaticamente allineata anche la tabella `cdl` usata dai menu a tendina dei Timesheet.
+
+- una nuova cartella valida con codice iniziale di 4 cifre viene creata automaticamente come CDL attiva;
+- una CDL già esistente ma disattivata viene riattivata se la relativa cartella è presente sul file server;
+- `COSTI` e `01_DIRECTORY DI BASE DA COPIARE` continuano a essere escluse;
+- le descrizioni già personalizzate manualmente in anagrafica non vengono sovrascritte; vengono completati solo eventuali campi mancanti.
+
+Dopo aver aggiornato `server/commesse-sync.js` sul file server, eseguire una volta:
+
+```powershell
+npm run sync:commesse:once
+```
+
+Poi riavviare l'agent/attività pianificata. Da quel momento le nuove commesse rilevate dal server compariranno anche nel selettore **Commessa / CDL** del Timesheet.

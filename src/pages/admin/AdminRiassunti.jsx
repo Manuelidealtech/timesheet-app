@@ -29,7 +29,8 @@ export default function AdminRiassunti() {
       .from("cdl")
       .select("id, code, name")
       .eq("is_active", true)
-      .order("name");
+      .order("code", { ascending: true })
+      .order("name", { ascending: true });
     if (error) throw error;
     setCdl(data || []);
   }

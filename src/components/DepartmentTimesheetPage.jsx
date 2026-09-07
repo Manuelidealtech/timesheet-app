@@ -136,7 +136,7 @@ export default function DepartmentTimesheetPage({ department }) {
 
         const [employeesRes, cdlRes, lavorazioniRes] = await Promise.all([
           employeesQuery,
-          supabase.from('cdl').select('id, code, name').eq('is_active', true).order('name', { ascending: true }),
+          supabase.from('cdl').select('id, code, name').eq('is_active', true).order('code', { ascending: true }).order('name', { ascending: true }),
           supabase.from('lavorazioni').select('id, name').eq('is_active', true).order('name', { ascending: true }),
         ]);
 
