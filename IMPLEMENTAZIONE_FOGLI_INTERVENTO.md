@@ -1,57 +1,63 @@
 # Implementazione fogli intervento
 
-## Cosa è stato aggiunto
-- Nuova sezione **Fogli intervento** nel menu laterale.
-- **Sidebar** fissa a sinistra con tutte le voci della vecchia navbar.
-- Pagina per:
-  - compilare il foglio intervento via form
-  - salvare i dati su Supabase
-  - esportare il PDF
-  - inviare il PDF via mail a `lucia.bisceglia@idealtech.it`
-- Archivio laterale dei fogli già salvati.
-- Migrazione SQL per la tabella `intervention_reports`.
-- Edge Function Supabase `send-intervention-email` per l'invio email con allegato PDF.
+## Funzioni disponibili
+- Compilazione digitale del foglio intervento.
+- Salvataggio e archivio su Supabase.
+- Esportazione PDF.
+- Firma manuale del cliente con dito, pennino o mouse.
+- La firma viene salvata nel foglio e riportata graficamente nel PDF.
+- Campo **Email cliente** compilabile al momento dell'intervento.
+- Pulsante **Invia email**: invia il PDF al cliente e una copia nascosta a Lucia.
 
-## File principali aggiunti/modificati
-- `src/components/Sidebar.jsx`
+## File principali
 - `src/pages/Interventi.jsx`
+- `src/components/SignaturePad.jsx`
 - `src/utils/interventionPdf.js`
 - `src/lib/api.js`
-- `src/App.jsx`
-- `src/styles/sidebar.css`
 - `src/styles/intervention.css`
-- `supabase/migrations/20260402_create_intervention_reports.sql`
-- `supabase/functions/send-intervention-email/index.ts`
+- `supabase/migrations/20260908_add_intervention_client_email_signature.sql`
+- `supabase/functions/send-intervention-report/index.ts`
 
-## Setup necessario
-### 1. Dipendenze
-```bash
-npm install
-```
+## Aggiornamento necessario su Supabase
 
-### 2. Eseguire la migration su Supabase
-Esegui il file:
+### 1. Eseguire la migration
+Eseguire nel SQL Editor di Supabase:
+
 ```sql
-supabase/migrations/20260402_create_intervention_reports.sql
+alter table if exists public.intervention_reports
+  add column if not exists client_email text null,
+  add column if not exists client_signature_image text null;
 ```
 
-### 3. Deploy edge function
-Pubblica la function:
+Oppure eseguire tutto il file:
+
+`supabase/migrations/20260908_add_intervention_client_email_signature.sql`
+
+### 2. Pubblicare la Edge Function aggiornata
+Dalla root del progetto:
+
 ```bash
-supabase functions deploy send-intervention-email
+npx supabase functions deploy send-intervention-report
 ```
 
-### 4. Variabili ambiente edge function
-Imposta nelle secrets di Supabase:
+### 3. Secrets della Edge Function
+Devono essere configurati:
 - `RESEND_API_KEY`
-- `INTERVENTION_FROM_EMAIL`
+- `MAIL_FROM`
+- `REPORT_RECIPIENT`
 
-Esempio mittente:
-- `Idealtech <noreply@idealtech.it>`
+`REPORT_RECIPIENT` deve essere impostato all'indirizzo di Lucia. Se non viene impostato, la function usa come fallback:
 
-## Nota importante sull'invio email
-L'invio diretto con allegato PDF non si può fare in modo affidabile solo dal browser.
-Per questo è stata predisposta una **Supabase Edge Function** che riceve il PDF in base64 e lo inoltra via email.
+`lucia.bisceglia@idealtech.it`
 
-## PDF di riferimento
-La struttura del form è stata ricavata dal modulo caricato: `FOGLIO INTERVENTO IDEALTECH.pdf`.
+Esempio di `MAIL_FROM`:
+
+`Idealtech <noreply@idealtech.it>`
+
+## Modalità di invio
+Il cliente viene inserito nel campo `to`. Lucia viene inserita in `bcc`, quindi riceve la stessa email e lo stesso PDF senza esporre al cliente l'indirizzo interno.
+
+Il PDF allegato è quello generato dall'app, perciò contiene anche la firma manuale acquisita sul tablet/telefono.
+
+## Nota deploy
+Questa modifica riguarda Vercel + Supabase. Non richiede aggiornamenti a `commesse-sync.js` sul file server.

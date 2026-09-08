@@ -9,6 +9,7 @@ import {
   fetchNextInterventionReportNumber,
 } from "../lib/api";
 import { buildInterventionPdf, downloadInterventionPdf } from "../utils/interventionPdf";
+import SignaturePad from "../components/SignaturePad";
 
 const emptyWorkRow = () => ({
   row_type: "work",
@@ -51,6 +52,7 @@ const ensureMinMachines = (machines) => {
 
 const createDefaultForm = () => ({
   client_name: "",
+  client_email: "",
   city: "",
   report_number: "",
   report_date: dayjs().format("YYYY-MM-DD"),
@@ -64,6 +66,7 @@ const createDefaultForm = () => ({
   tested_result: "Positivo",
   technician_signature: "",
   client_signature: "",
+  client_signature_image: "",
   machine_order_number: "",
   work_rows: ensureMinWorkRows([]),
   machines: ensureMinMachines([]),
@@ -114,6 +117,7 @@ function buildPayloadForDb(form) {
     report_number: form.report_number || null,
     report_date: form.report_date || null,
     client_name: form.client_name || "",
+    client_email: form.client_email || "",
     city: form.city || "",
     travel_meals: form.travel_meals || "",
     car_km: form.car_km || "",
@@ -125,6 +129,7 @@ function buildPayloadForDb(form) {
     tested_with_positive_result: isTested ? form.tested_result === "Positivo" : false,
     technician_signature: form.technician_signature || "",
     client_signature: form.client_signature || "",
+    client_signature_image: form.client_signature_image || "",
     work_rows: (form.work_rows || [])
       .map((row) => {
         const isReturn = row?.row_type === "return";
@@ -389,6 +394,13 @@ export default function Interventi() {
       return;
     }
 
+    const clientEmail = String(source.client_email || "").trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!clientEmail || !emailPattern.test(clientEmail)) {
+      setErr("Inserisci un indirizzo email cliente valido prima dell'invio.");
+      return;
+    }
+
     try {
       setSendingId(source.id || "draft");
       setErr("");
@@ -423,6 +435,7 @@ export default function Interventi() {
         report_number: savedReport.report_number,
         report_date: savedReport.report_date,
         client_name: savedReport.client_name,
+        client_email: savedReport.client_email,
         city: savedReport.city,
         travel_meals: savedReport.travel_meals,
         car_km: savedReport.car_km,
@@ -433,6 +446,7 @@ export default function Interventi() {
         tested_with_positive_result: savedReport.tested_result === "Positivo",
         technician_signature: savedReport.technician_signature,
         client_signature: savedReport.client_signature,
+        client_signature_image: savedReport.client_signature_image,
         notes: savedReport.notes,
         pdf_base64: pdfBase64,
         pdf_file_name: `foglio-intervento-${savedReport.report_number}.pdf`,
@@ -481,7 +495,7 @@ export default function Interventi() {
       }
 
       await loadReports();
-      setOk("Foglio intervento inviato via mail ✅");
+      setOk("Foglio intervento inviato a Lucia e al cliente ✅");
     } catch (e) {
       console.error(e);
       setErr(e?.message || "Errore invio email");
@@ -498,7 +512,7 @@ export default function Interventi() {
           <div className="pageHeaderMain">
             <h1 className="pageTitle">Fogli intervento</h1>
             <p className="pageSubtitle">
-              Compilazione digitale del foglio intervento, export PDF e invio diretto a Lucia.
+              Compilazione digitale, firma del cliente ed invio del PDF a Lucia e al cliente.
             </p>
           </div>
           <div className="row">
@@ -514,7 +528,7 @@ export default function Interventi() {
               onClick={() => sendByEmail()}
               disabled={sendingId === (selectedId || "draft")}
             >
-              {sendingId === (selectedId || "draft") ? "Invio..." : "Invia a Lucia"}
+              {sendingId === (selectedId || "draft") ? "Invio..." : "Invia email"}
             </button>
           </div>
         </div>
@@ -897,13 +911,24 @@ export default function Interventi() {
                     </div>
 
                     <div className="formGroup">
-                      <label>Firma cliente</label>
+                      <label>Email cliente per invio foglio</label>
                       <input
-                        value={form.client_signature}
-                        onChange={(e) => handleField("client_signature", e.target.value)}
-                        placeholder="Timbro / firma"
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        value={form.client_email || ""}
+                        onChange={(e) => handleField("client_email", e.target.value)}
+                        placeholder="cliente@azienda.it"
                       />
+                      <div className="sub interventionEmailHint">
+                        Il PDF verrà inviato a questo indirizzo e, in copia, a Lucia.
+                      </div>
                     </div>
+
+                    <SignaturePad
+                      value={form.client_signature_image || ""}
+                      onChange={(dataUrl) => handleField("client_signature_image", dataUrl)}
+                    />
                   </div>
                 </div>
               </div>
@@ -921,7 +946,7 @@ export default function Interventi() {
                   onClick={() => sendByEmail()}
                   disabled={sendingId === (selectedId || "draft")}
                 >
-                  {sendingId === (selectedId || "draft") ? "Invio..." : "Invia a Lucia"}
+                  {sendingId === (selectedId || "draft") ? "Invio..." : "Invia email"}
                 </button>
               </div>
             </form>

@@ -50,3 +50,22 @@
 @media (max-width: 900px) { .interventionRowGrid { grid-template-columns: repeat(2,minmax(0,1fr)); } .interventionRowGrid .col-description { grid-column: span 2; } }
 @media (max-width: 720px) { .interventionPage .pageHeader > .row { display: grid; grid-template-columns: 1fr; } .interventionHistorySummary { padding: 14px; } .interventionHistoryHint { display: none; } .interventionHistoryContent { padding: 0 12px 12px; } .interventionHistoryList { grid-template-columns: 1fr; max-height: 420px; } .formSection { padding: 13px; border-radius: 14px; } .interventionSectionActions { display: grid; grid-template-columns: 1fr; width: 100%; } .interventionRowGrid { grid-template-columns: 1fr; } .interventionRowGrid .col-description { grid-column: auto; } .interventionRowActions .btn,.interventionSectionActions .btn,.interventionActions .btn { width: 100%; } .interventionActions { position: static; display: grid; grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .interventionHistorySummary { align-items: flex-start; } .interventionHistorySummaryMeta { flex-direction: column-reverse; gap: 5px; } .interventionHistoryTop,.interventionHistoryMeta { flex-direction: column; gap: 3px; } .interventionFormCard { padding: 10px; } .formSection { padding: 11px; margin-bottom: 10px; } }
+
+/* Firma cliente manuale */
+.signaturePadShell { position: relative; display: grid; gap: 10px; margin-top: 12px; padding: 13px; border: 1px solid var(--stroke); border-radius: 15px; background: var(--input-bg); }
+.signaturePadTopline { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.signaturePadActions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.signatureSavedBadge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border-radius: 999px; background: color-mix(in srgb,#16a36a 14%,transparent); border: 1px solid color-mix(in srgb,#16a36a 28%,transparent); color: #13835a; font-size: 11px; font-weight: 850; }
+.signatureClearBtn { min-height: 34px; padding: 7px 11px; font-size: 12px; }
+.signaturePadCanvas { display: block; width: 100%; height: 170px; border: 1.5px dashed color-mix(in srgb,var(--text) 24%,transparent); border-radius: 12px; background: #fff; cursor: crosshair; touch-action: none; user-select: none; -webkit-user-select: none; }
+.signaturePadCanvas.isDisabled { opacity: .65; cursor: not-allowed; }
+.signaturePadHint { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); pointer-events: none; color: #98a2b3; font-weight: 750; font-size: 14px; }
+.interventionEmailHint { margin-top: 6px; }
+
+@media (max-width: 720px) {
+  .signaturePadTopline { display: grid; grid-template-columns: 1fr; }
+  .signaturePadActions { justify-content: stretch; }
+  .signaturePadActions .btn { width: 100%; }
+  .signaturePadCanvas { height: 190px; }
+  .signaturePadHint { bottom: 84px; }
+}

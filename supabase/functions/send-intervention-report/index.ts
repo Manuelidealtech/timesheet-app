@@ -30,6 +30,7 @@ type ReportPayload = {
   report_number?: string;
   report_date?: string;
   client_name?: string;
+  client_email?: string;
   city?: string;
   travel_meals?: string;
   car_km?: string;
@@ -40,7 +41,10 @@ type ReportPayload = {
   tested_with_positive_result?: boolean;
   technician_signature?: string;
   client_signature?: string;
+  client_signature_image?: string;
   notes?: string;
+  pdf_base64?: string;
+  pdf_file_name?: string;
   machines?: MachineRow[];
   items?: ItemRow[];
 };
@@ -48,6 +52,10 @@ type ReportPayload = {
 function safe(v: unknown): string {
   if (v === null || v === undefined) return "";
   return String(v).trim();
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function formatDate(value?: string): string {
@@ -348,7 +356,7 @@ serve(async (req) => {
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const reportRecipient =
-      Deno.env.get("REPORT_RECIPIENT") || "manuel@idealtech.it";
+      Deno.env.get("REPORT_RECIPIENT") || "lucia.bisceglia@idealtech.it";
     const mailFrom = Deno.env.get("MAIL_FROM");
 
     if (!resendApiKey) {
@@ -383,38 +391,59 @@ serve(async (req) => {
       );
     }
 
-    const pdfBytes = await buildPdf(body);
+    const clientEmail = safe(body.client_email).toLowerCase();
+    if (!clientEmail || !isValidEmail(clientEmail)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Indirizzo email cliente mancante o non valido",
+        }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
-    const base64Pdf = btoa(
-      Array.from(pdfBytes, (byte) => String.fromCharCode(byte)).join("")
-    );
+    let base64Pdf = safe(body.pdf_base64);
+    if (!base64Pdf) {
+      const pdfBytes = await buildPdf(body);
+      base64Pdf = btoa(
+        Array.from(pdfBytes, (byte) => String.fromCharCode(byte)).join("")
+      );
+    }
 
     const reportNumber = safe(body.report_number) || "SENZA-NUMERO";
     const reportDate = formatDate(body.report_date) || "-";
     const clientName = safe(body.client_name);
+    const internalRecipient = safe(reportRecipient).toLowerCase();
 
-    const emailPayload = {
+    const emailPayload: Record<string, unknown> = {
       from: mailFrom,
-      to: [reportRecipient],
+      to: [clientEmail],
       subject: `Foglio intervento ${reportNumber} - ${clientName}`,
       html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-          <h2>Nuovo foglio intervento compilato</h2>
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #182033;">
+          <h2>Foglio intervento Idealtech</h2>
+          <p>Buongiorno,</p>
+          <p>in allegato trovi una copia del foglio intervento compilato.</p>
           <p><strong>Cliente:</strong> ${clientName}</p>
           <p><strong>Città:</strong> ${safe(body.city) || "-"}</p>
           <p><strong>Numero foglio:</strong> ${reportNumber}</p>
           <p><strong>Data:</strong> ${reportDate}</p>
           <p><strong>Note:</strong> ${safe(body.notes) || "-"}</p>
-          <p>In allegato trovi il PDF del foglio intervento.</p>
+          <p style="margin-top: 22px; color: #667085;">Copia inviata automaticamente anche al referente Idealtech.</p>
         </div>
       `,
       attachments: [
         {
-          filename: `foglio-intervento-${reportNumber}.pdf`,
+          filename: safe(body.pdf_file_name) || `foglio-intervento-${reportNumber}.pdf`,
           content: base64Pdf,
         },
       ],
     };
+
+    // Lucia riceve una copia nascosta: il cliente non vede l'indirizzo interno.
+    if (internalRecipient && internalRecipient !== clientEmail) {
+      emailPayload.bcc = [internalRecipient];
+    }
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -442,7 +471,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: "Email inviata correttamente",
-        recipient: reportRecipient,
+        recipient: clientEmail,
+        internal_recipient: internalRecipient,
         resend: resendResult,
       }),
       { status: 200, headers: corsHeaders }

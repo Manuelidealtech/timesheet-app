@@ -214,9 +214,9 @@ rowsToRender.forEach((row, index) => {
 
   // --- COLLAUDO E FIRME ---
   y += 46;
-  y = ensurePage(doc, y, 28);
+  y = ensurePage(doc, y, 48);
 
-  doc.roundedRect(14, y - 4, pageWidth - 28, 24, 3, 3);
+  doc.roundedRect(14, y - 4, pageWidth - 28, 42, 3, 3);
   drawLabelValue(doc, "Collaudata", data.tested ? "Sì" : "No", 18, y + 2, 24);
   drawLabelValue(doc, "Data", data.tested_on, 72, y + 2, 14);
   drawLabelValue(
@@ -227,8 +227,26 @@ rowsToRender.forEach((row, index) => {
     y + 2,
     16
   );
-  drawLabelValue(doc, "Firma incaricato", data.technician_signature, 18, y + 10, 34);
-  drawLabelValue(doc, "Firma cliente", data.client_signature, 120, y + 10, 28);
+
+  drawLabelValue(doc, "Firma incaricato", data.technician_signature, 18, y + 12, 34);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Firma cliente", 112, y + 12);
+  const signatureImage = String(data.client_signature_image || "");
+  if (signatureImage.startsWith("data:image/")) {
+    try {
+      const format = signatureImage.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
+      doc.addImage(signatureImage, format, 112, y + 15, 76, 17, undefined, "FAST");
+    } catch {
+      doc.setFont("helvetica", "normal");
+      doc.text(safe(data.client_signature), 140, y + 12);
+    }
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.text(safe(data.client_signature), 140, y + 12);
+  }
+
+  drawLabelValue(doc, "Email cliente", data.client_email, 18, y + 28, 30);
 
   // --- FOOTER ---
   doc.setFontSize(9);
