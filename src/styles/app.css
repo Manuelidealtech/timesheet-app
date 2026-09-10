@@ -1654,3 +1654,38 @@ tbody tr:hover,
   .cdlPickerTriggerText strong,.cdlPickerOptionText strong { font-size: 12.5px; }
   .cdlPickerCode { min-width: 52px; height: 30px; border-radius: 9px; }
 }
+
+/* =========================================================
+   CDL picker — menu più ampio e non tagliato nel Timesheet
+   ========================================================= */
+.timesheetEntryLayout { overflow: visible; }
+.timesheetFormCard {
+  position: relative;
+  z-index: 20;
+  overflow: visible;
+}
+.timesheetLatestCard { position: relative; z-index: 1; }
+.cdlPickerFormGroup:has(.cdlPicker.isOpen) { z-index: 150; }
+.cdlPickerMenu {
+  width: min(720px, calc(100vw - 44px));
+  max-height: min(72vh, 690px);
+}
+.cdlPickerScroll {
+  max-height: min(60vh, 570px);
+  padding-bottom: 12px;
+}
+.cdlPickerOption {
+  min-height: 56px;
+  padding: 9px 10px;
+}
+.cdlPickerOptionText strong { font-size: 12.5px; }
+.cdlPickerOptionText small { font-size: 10px; }
+
+@media (min-width: 621px) {
+  .timesheetFormCard .cdlPickerMenu { width: min(760px, calc(100vw - 360px)); }
+}
+
+@media (max-width: 620px) {
+  .cdlPickerMenu { max-height: min(82vh, 720px); }
+  .cdlPickerScroll { max-height: calc(min(82vh, 720px) - 132px); }
+}

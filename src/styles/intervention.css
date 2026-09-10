@@ -228,3 +228,314 @@
   .interventionTravelStrip,.interventionActivityGrid { grid-template-columns: 1fr; }
   .interventionMiniField--description { grid-column: auto; }
 }
+
+/* =========================================================
+   Fogli intervento — workflow guidato + archivio richiudibile
+   ========================================================= */
+.interventionWorkspace {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.interventionArchivePanel {
+  position: static;
+  top: auto;
+  padding: 0;
+  overflow: hidden;
+  border-color: color-mix(in srgb,var(--role-accent) 14%,var(--stroke));
+  box-shadow: var(--shadow-soft);
+}
+.interventionArchiveToggle {
+  width: 100%;
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 15px;
+  border: 0;
+  background: linear-gradient(135deg,color-mix(in srgb,var(--role-accent) 4%,var(--panel-strong)),var(--panel-strong));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.interventionArchiveToggle:hover {
+  background: linear-gradient(135deg,color-mix(in srgb,var(--role-accent) 8%,var(--panel-strong)),var(--panel-strong));
+}
+.interventionArchiveToggleLead { min-width: 0; display: flex; align-items: center; gap: 11px; }
+.interventionArchiveToggleIcon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb,var(--role-accent) 20%,var(--stroke));
+  border-radius: 12px;
+  color: var(--role-accent);
+  background: color-mix(in srgb,var(--role-accent) 9%,var(--panel-soft));
+}
+.interventionArchiveToggleLead > div { min-width: 0; display: grid; gap: 2px; }
+.interventionArchiveToggleLead strong { font-size: 15px; letter-spacing: -.015em; }
+.interventionArchiveToggleLead small { color: var(--muted); font-size: 10.5px; }
+.interventionArchiveToggleEnd { display: flex; align-items: center; gap: 9px; }
+.interventionArchiveChevron {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--stroke);
+  border-radius: 9px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 19px;
+  transition: transform .2s ease, color .2s ease, border-color .2s ease;
+}
+.interventionArchivePanel.isOpen .interventionArchiveChevron {
+  transform: rotate(180deg);
+  color: var(--role-accent);
+  border-color: color-mix(in srgb,var(--role-accent) 26%,var(--stroke));
+}
+.interventionArchiveBody {
+  padding: 0 10px 11px;
+  border-top: 1px solid var(--stroke);
+  background: color-mix(in srgb,var(--panel-soft) 56%,var(--panel));
+}
+.interventionArchiveSearch { max-width: 620px; margin: 11px 0 10px; }
+.interventionArchiveList {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  max-height: 390px;
+  min-height: 0;
+  padding: 0 1px 1px;
+}
+.interventionArchiveItem { min-width: 0; }
+
+.interventionFormWizard {
+  position: relative;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb,var(--role-accent) 30%,var(--stroke));
+  border-radius: 22px;
+  background:
+    radial-gradient(600px 220px at 100% 0,color-mix(in srgb,var(--role-accent-2) 9%,transparent),transparent 66%),
+    linear-gradient(145deg,color-mix(in srgb,var(--role-accent) 4%,var(--panel-soft)),color-mix(in srgb,var(--panel-strong) 92%,var(--panel)));
+  box-shadow: 0 18px 44px rgba(19,36,72,.10), inset 0 1px 0 color-mix(in srgb,#fff 72%,transparent);
+}
+.interventionFormWizard::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 22px 0 0 22px;
+  background: linear-gradient(180deg,var(--role-accent),var(--role-accent-2));
+  pointer-events: none;
+}
+.interventionDocumentBar {
+  border-color: color-mix(in srgb,var(--role-accent) 24%,var(--stroke));
+  background: linear-gradient(135deg,color-mix(in srgb,var(--role-accent) 10%,var(--panel-strong)),color-mix(in srgb,var(--role-accent-2) 5%,var(--panel-strong)));
+  box-shadow: none;
+}
+.interventionDocumentIcon {
+  color: #fff;
+  background: linear-gradient(135deg,var(--role-accent),var(--role-accent-2));
+  box-shadow: 0 8px 18px color-mix(in srgb,var(--role-accent) 24%,transparent);
+}
+.interventionDocumentIdentity > div > span { color: var(--role-accent); }
+
+.interventionWizardHeader {
+  overflow: hidden;
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  background: var(--panel-strong);
+}
+.interventionWizardIntro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 13px 10px;
+  border-bottom: 1px solid var(--stroke);
+}
+.interventionWizardIntro > div { min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 8px; }
+.interventionWizardIntro > div > span {
+  width: 100%;
+  color: var(--role-accent);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.interventionWizardIntro strong { font-size: 16px; letter-spacing: -.02em; }
+.interventionWizardIntro small { color: var(--muted); font-size: 10.5px; }
+.interventionWizardCounter {
+  flex: 0 0 auto;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb,var(--role-accent) 20%,var(--stroke));
+  border-radius: 999px;
+  background: color-mix(in srgb,var(--role-accent) 7%,var(--panel-soft));
+  color: var(--role-accent);
+  font-size: 9.5px;
+  font-weight: 900;
+}
+.interventionWizardNav {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 0;
+  padding: 6px;
+}
+.interventionWizardTab {
+  position: relative;
+  min-width: 0;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 34px minmax(0,1fr) 20px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-soft);
+  text-align: left;
+  cursor: pointer;
+  transition: .16s ease;
+}
+.interventionWizardTab:hover { background: var(--panel-soft); }
+.interventionWizardTab.isActive {
+  border-color: color-mix(in srgb,var(--role-accent) 24%,var(--stroke));
+  background: color-mix(in srgb,var(--role-accent) 8%,var(--panel-soft));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--role-accent) 4%,transparent);
+}
+.interventionWizardTabIcon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--panel-soft);
+  transition: .16s ease;
+}
+.interventionWizardTab.isActive .interventionWizardTabIcon {
+  color: #fff;
+  background: linear-gradient(135deg,var(--role-accent),var(--role-accent-2));
+}
+.interventionWizardTab.isComplete:not(.isActive) .interventionWizardTabIcon {
+  color: var(--ok);
+  background: color-mix(in srgb,var(--ok) 9%,var(--panel-soft));
+}
+.interventionWizardTabText { min-width: 0; display: grid; gap: 1px; }
+.interventionWizardTabText strong { overflow: hidden; color: var(--text); font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; }
+.interventionWizardTabText small { overflow: hidden; color: var(--muted); font-size: 8.8px; white-space: nowrap; text-overflow: ellipsis; }
+.interventionWizardDone {
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--ok);
+}
+
+.interventionStepPanel {
+  min-height: 315px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb,var(--role-accent) 17%,var(--stroke));
+  border-radius: 16px;
+  background: var(--panel-strong);
+  box-shadow: 0 8px 24px rgba(19,36,72,.06);
+  animation: interventionStepIn .18s ease both;
+}
+@keyframes interventionStepIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.interventionSectionTitleV2 { grid-template-columns: 38px minmax(0,1fr); }
+.interventionSectionTitleV2--actions { grid-template-columns: 38px minmax(0,1fr) auto; }
+.interventionSectionNumber { display: none; }
+.interventionSectionIconV2 {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg,var(--role-accent),var(--role-accent-2));
+}
+.interventionSectionTitleV2 h2 { font-size: 18px; }
+.interventionSectionTitleV2 p { font-size: 11px; }
+
+.interventionStepFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid var(--stroke);
+  border-radius: 13px;
+  background: color-mix(in srgb,var(--panel-strong) 92%,var(--panel-soft));
+}
+.interventionStepFooter > span { color: var(--muted); font-size: 10.5px; }
+.interventionStepNext { min-width: 170px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.interventionStepBack { min-width: 105px; }
+.interventionStepFooter--final > span { margin-left: auto; text-align: right; }
+
+.interventionActionDock {
+  position: static;
+  border-color: color-mix(in srgb,var(--role-accent) 20%,var(--stroke-strong));
+  background: var(--panel-strong);
+  box-shadow: 0 10px 28px rgba(12,26,58,.09);
+}
+
+@media (max-width: 1040px) {
+  .interventionArchiveList { grid-template-columns: repeat(2,minmax(0,1fr)); max-height: 390px; }
+  .interventionWizardTab { grid-template-columns: 31px minmax(0,1fr) 18px; padding: 7px; }
+  .interventionWizardTabIcon { width: 31px; height: 31px; }
+}
+
+@media (max-width: 760px) {
+  .interventionFormWizard { padding: 9px; border-radius: 18px; }
+  .interventionFormWizard::before { width: 3px; border-radius: 18px 0 0 18px; }
+  .interventionArchiveToggle { min-height: 70px; padding: 11px 12px; }
+  .interventionArchiveToggleIcon { width: 36px; height: 36px; }
+  .interventionArchiveList { grid-template-columns: 1fr; max-height: 360px; }
+  .interventionArchiveSearch { max-width: none; }
+  .interventionWizardIntro { align-items: flex-start; }
+  .interventionWizardIntro > div { display: grid; gap: 2px; }
+  .interventionWizardIntro > div > span { width: auto; }
+  .interventionWizardNav { grid-template-columns: repeat(4,1fr); gap: 4px; }
+  .interventionWizardTab {
+    min-height: 64px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 4px;
+    padding: 7px 4px;
+    text-align: center;
+  }
+  .interventionWizardTabText strong { font-size: 9.5px; }
+  .interventionWizardTabText small { display: none; }
+  .interventionWizardDone { position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; }
+  .interventionStepPanel { min-height: 0; padding: 13px; }
+  .interventionSectionTitleV2,.interventionSectionTitleV2--actions { grid-template-columns: 34px minmax(0,1fr); }
+  .interventionSectionButtons,.interventionAddMachineBtn { grid-column: 1 / -1; }
+  .interventionSectionIconV2 { width: 34px; height: 34px; }
+  .interventionSectionTitleV2 h2 { font-size: 15px; }
+  .interventionStepFooter { flex-wrap: wrap; }
+  .interventionStepFooter > span { width: 100%; order: -1; }
+  .interventionStepFooter--final > span { margin-left: 0; text-align: left; }
+  .interventionStepBack,.interventionStepNext { flex: 1 1 0; min-width: 0; }
+}
+
+@media (max-width: 520px) {
+  .interventionArchiveToggleLead small { font-size: 9.5px; }
+  .interventionArchiveCount { display: none; }
+  .interventionWizardIntro strong { font-size: 15px; }
+  .interventionWizardCounter { font-size: 9px; }
+  .interventionWizardNav { padding: 5px; }
+  .interventionWizardTab { min-height: 58px; }
+  .interventionWizardTabIcon { width: 29px; height: 29px; }
+  .interventionStepFooter { display: grid; grid-template-columns: 1fr 1.45fr; }
+  .interventionStepFooter > span { grid-column: 1 / -1; }
+  .interventionStepFooter:has(.interventionStepBack:only-child) { grid-template-columns: 1fr; }
+}

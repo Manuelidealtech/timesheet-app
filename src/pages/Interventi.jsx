@@ -193,6 +193,13 @@ function formatReportDate(value) {
   return date.isValid() ? date.format("DD/MM/YYYY") : value;
 }
 
+const INTERVENTION_WIZARD_STEPS = [
+  { label: "Cliente", icon: "user", hint: "Dati e trasferta" },
+  { label: "Attività", icon: "wrench", hint: "Lavori e viaggi" },
+  { label: "Macchine", icon: "machine", hint: "Modelli e seriali" },
+  { label: "Chiusura", icon: "check", hint: "Collaudo, email e firma" },
+];
+
 export default function Interventi() {
   const [form, setForm] = useState(createDefaultForm());
   const [reports, setReports] = useState([]);
@@ -203,6 +210,8 @@ export default function Interventi() {
   const [ok, setOk] = useState("");
   const [err, setErr] = useState("");
   const [reportQuery, setReportQuery] = useState("");
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
 
   const selectedReport = useMemo(
     () => reports.find((item) => String(item.id) === String(selectedId)) || null,
@@ -229,6 +238,13 @@ export default function Interventi() {
     return { done, total: checks.length, percentage: Math.round((done / checks.length) * 100), checks };
   }, [form]);
 
+  const wizardCompletion = useMemo(() => [
+    Boolean(formCompletion.checks[0]),
+    Boolean(formCompletion.checks[1]),
+    Boolean(formCompletion.checks[2]),
+    Boolean(formCompletion.checks[3] && formCompletion.checks[4] && formCompletion.checks[5]),
+  ], [formCompletion]);
+
   useEffect(() => {
     loadReports();
     initNewForm();
@@ -247,6 +263,7 @@ export default function Interventi() {
   useEffect(() => {
     if (selectedReport) {
       setForm(normalizeReport(selectedReport));
+      setActiveStep(0);
     }
   }, [selectedReport]);
 
@@ -347,6 +364,8 @@ export default function Interventi() {
       setSelectedId("");
       setErr("");
       setOk("");
+      setArchiveOpen(false);
+      setActiveStep(0);
 
       const nextForm = await buildNewForm();
       setForm(nextForm);
@@ -587,37 +606,86 @@ export default function Interventi() {
       {ok && <div className="toast ok interventionToast">{ok}</div>}
 
       <div className="interventionWorkspace">
-        <aside className="card interventionArchivePanel">
-          <div className="interventionArchiveHead">
-            <div><span className="interventionSectionKicker">Archivio</span><h2>Fogli salvati</h2><p>Apri un foglio per modificarlo o reinviarlo.</p></div>
-            <span className="interventionArchiveCount">{filteredReports.length}</span>
-          </div>
-          <div className="interventionArchiveSearch"><InterventionIcon name="search" size={16} /><input value={reportQuery} onChange={(e) => setReportQuery(e.target.value)} placeholder="Numero, cliente, città..." /></div>
-          <div className="interventionArchiveList">
-            {loading ? <div className="interventionArchiveEmpty">Caricamento archivio...</div> : filteredReports.length ? filteredReports.map((report) => {
-              const active = String(selectedId) === String(report.id);
-              return (
-                <div key={report.id} className={`interventionArchiveItem ${active ? "isActive" : ""}`}>
-                  <button type="button" className="interventionArchiveMain" onClick={() => setSelectedId(report.id)}>
-                    <div className="interventionArchiveTopline"><span className="interventionReportNumber">#{report.report_number || "—"}</span><span className={`interventionMailStatus ${report.pdf_sent_at ? "isSent" : ""}`}>{report.pdf_sent_at ? "Inviato" : "Da inviare"}</span></div>
-                    <strong>{report.client_name || "Cliente non indicato"}</strong>
-                    <div className="interventionArchiveMeta"><span><InterventionIcon name="calendar" size={13} />{formatReportDate(report.report_date)}</span><span>{report.city || "Città —"}</span></div>
-                  </button>
-                  <button type="button" className="interventionArchiveDelete" onClick={() => handleDeleteReport(report.id)} title="Elimina foglio" aria-label="Elimina foglio"><InterventionIcon name="trash" size={15} /></button>
-                </div>
-              );
-            }) : <div className="interventionArchiveEmpty"><InterventionIcon name="search" size={21} /><strong>Nessun foglio trovato</strong><span>Modifica la ricerca oppure crea un nuovo intervento.</span></div>}
-          </div>
-        </aside>
+        <section className={`card interventionArchivePanel ${archiveOpen ? "isOpen" : ""}`}>
+          <button
+            type="button"
+            className="interventionArchiveToggle"
+            onClick={() => setArchiveOpen((current) => !current)}
+            aria-expanded={archiveOpen}
+          >
+            <div className="interventionArchiveToggleLead">
+              <span className="interventionArchiveToggleIcon"><InterventionIcon name="archive" size={18} /></span>
+              <div>
+                <span className="interventionSectionKicker">Archivio interventi</span>
+                <strong>Fogli salvati</strong>
+                <small>{reports.length} fogli · {sentReports} inviati · {pendingReports} da inviare</small>
+              </div>
+            </div>
+            <div className="interventionArchiveToggleEnd">
+              <span className="interventionArchiveCount">{filteredReports.length}</span>
+              <span className="interventionArchiveChevron" aria-hidden="true">⌄</span>
+            </div>
+          </button>
 
-        <form className="interventionFormV2" onSubmit={handleSave}>
+          {archiveOpen && (
+            <div className="interventionArchiveBody">
+              <div className="interventionArchiveSearch"><InterventionIcon name="search" size={16} /><input value={reportQuery} onChange={(e) => setReportQuery(e.target.value)} placeholder="Numero, cliente, città..." /></div>
+              <div className="interventionArchiveList">
+                {loading ? <div className="interventionArchiveEmpty">Caricamento archivio...</div> : filteredReports.length ? filteredReports.map((report) => {
+                  const active = String(selectedId) === String(report.id);
+                  return (
+                    <div key={report.id} className={`interventionArchiveItem ${active ? "isActive" : ""}`}>
+                      <button type="button" className="interventionArchiveMain" onClick={() => { setSelectedId(report.id); setArchiveOpen(false); setActiveStep(0); }}>
+                        <div className="interventionArchiveTopline"><span className="interventionReportNumber">#{report.report_number || "—"}</span><span className={`interventionMailStatus ${report.pdf_sent_at ? "isSent" : ""}`}>{report.pdf_sent_at ? "Inviato" : "Da inviare"}</span></div>
+                        <strong>{report.client_name || "Cliente non indicato"}</strong>
+                        <div className="interventionArchiveMeta"><span><InterventionIcon name="calendar" size={13} />{formatReportDate(report.report_date)}</span><span>{report.city || "Città —"}</span></div>
+                      </button>
+                      <button type="button" className="interventionArchiveDelete" onClick={() => handleDeleteReport(report.id)} title="Elimina foglio" aria-label="Elimina foglio"><InterventionIcon name="trash" size={15} /></button>
+                    </div>
+                  );
+                }) : <div className="interventionArchiveEmpty"><InterventionIcon name="search" size={21} /><strong>Nessun foglio trovato</strong><span>Modifica la ricerca oppure crea un nuovo intervento.</span></div>}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <form className="interventionFormV2 interventionFormWizard" onSubmit={handleSave}>
           <div className="interventionDocumentBar">
             <div className="interventionDocumentIdentity"><span className="interventionDocumentIcon"><InterventionIcon name="file" /></span><div><span>{selectedId ? "Foglio selezionato" : "Nuovo foglio"}</span><strong>#{form.report_number || "automatico"}</strong></div></div>
             <div className="interventionDocumentMeta"><span>{form.client_name || "Cliente da inserire"}</span><span>{formatReportDate(form.report_date)}</span>{selectedReport?.pdf_sent_at && <span className="interventionSentPill">Email inviata</span>}</div>
           </div>
 
-          <section className="formSection interventionSectionV2">
-            <div className="interventionSectionTitleV2"><span className="interventionSectionNumber">01</span><span className="interventionSectionIconV2"><InterventionIcon name="user" /></span><div><h2>Cliente e dati intervento</h2><p>Informazioni principali, data e spese di trasferta.</p></div></div>
+          <div className="interventionWizardHeader">
+            <div className="interventionWizardIntro">
+              <div>
+                <span>{selectedId ? "Modifica guidata" : "Nuovo foglio intervento"}</span>
+                <strong>{INTERVENTION_WIZARD_STEPS[activeStep].label}</strong>
+                <small>{INTERVENTION_WIZARD_STEPS[activeStep].hint}</small>
+              </div>
+              <span className="interventionWizardCounter">Passaggio {activeStep + 1} di {INTERVENTION_WIZARD_STEPS.length}</span>
+            </div>
+            <div className="interventionWizardNav" role="tablist" aria-label="Passaggi foglio intervento">
+              {INTERVENTION_WIZARD_STEPS.map((step, index) => (
+                <button
+                  type="button"
+                  key={step.label}
+                  className={`interventionWizardTab ${index === activeStep ? "isActive" : ""} ${wizardCompletion[index] ? "isComplete" : ""}`}
+                  onClick={() => setActiveStep(index)}
+                  role="tab"
+                  aria-selected={index === activeStep}
+                >
+                  <span className="interventionWizardTabIcon"><InterventionIcon name={step.icon} size={16} /></span>
+                  <span className="interventionWizardTabText"><strong>{step.label}</strong><small>{step.hint}</small></span>
+                  {wizardCompletion[index] && <span className="interventionWizardDone"><InterventionIcon name="check" size={12} /></span>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {activeStep === 0 && (
+            <>
+          <section className="formSection interventionSectionV2 interventionStepPanel">
+            <div className="interventionSectionTitleV2"><span className="interventionSectionIconV2"><InterventionIcon name="user" /></span><div><h2>Cliente e dati intervento</h2><p>Informazioni principali, data e spese di trasferta.</p></div></div>
             <div className="interventionPrimaryGrid">
               <div className="formGroup interventionFieldWide"><label>Cliente *</label><input value={form.client_name} onChange={(e) => handleField("client_name", e.target.value)} placeholder="Ragione sociale / cliente" required /></div>
               <div className="formGroup"><label>Città</label><input value={form.city} onChange={(e) => handleField("city", e.target.value)} placeholder="Località intervento" /></div>
@@ -632,10 +700,18 @@ export default function Interventi() {
               <div className="formGroup"><label>Pernottamenti</label><input value={form.overnight_stays} onChange={(e) => handleField("overnight_stays", e.target.value)} placeholder="0" /></div>
             </div>
           </section>
+          <div className="interventionStepFooter">
+            <span>Cliente e dati base pronti? Prosegui con le attività.</span>
+            <button type="button" className="btn btnPrimary interventionStepNext" onClick={() => setActiveStep(1)}>Continua · Attività <span aria-hidden="true">→</span></button>
+          </div>
+            </>
+          )}
 
-          <section className="formSection interventionSectionV2">
+          {activeStep === 1 && (
+            <>
+          <section className="formSection interventionSectionV2 interventionStepPanel">
             <div className="interventionSectionTitleV2 interventionSectionTitleV2--actions">
-              <span className="interventionSectionNumber">02</span><span className="interventionSectionIconV2"><InterventionIcon name="wrench" /></span><div><h2>Attività, viaggi e ricambi</h2><p>Inserisci una riga per ogni attività o tratta di ritorno.</p></div>
+              <span className="interventionSectionIconV2"><InterventionIcon name="wrench" /></span><div><h2>Attività, viaggi e ricambi</h2><p>Inserisci una riga per ogni attività o tratta di ritorno.</p></div>
               <div className="interventionSectionButtons"><button type="button" className="btn" onClick={addWorkRow}><InterventionIcon name="plus" size={15} /> Riga lavoro</button><button type="button" className="btn btnPrimary" onClick={addReturnRow}><InterventionIcon name="plus" size={15} /> Aggiungi ritorno</button></div>
             </div>
             <div className="interventionRowsV2">
@@ -659,9 +735,17 @@ export default function Interventi() {
               })}
             </div>
           </section>
+          <div className="interventionStepFooter">
+            <button type="button" className="btn interventionStepBack" onClick={() => setActiveStep(0)}>← Cliente</button>
+            <button type="button" className="btn btnPrimary interventionStepNext" onClick={() => setActiveStep(2)}>Continua · Macchine <span aria-hidden="true">→</span></button>
+          </div>
+            </>
+          )}
 
-          <section className="formSection interventionSectionV2">
-            <div className="interventionSectionTitleV2 interventionSectionTitleV2--actions"><span className="interventionSectionNumber">03</span><span className="interventionSectionIconV2"><InterventionIcon name="machine" /></span><div><h2>Macchine coinvolte</h2><p>Associa modello e numero di serie all’intervento.</p></div><button type="button" className="btn interventionAddMachineBtn" onClick={addMachine}><InterventionIcon name="plus" size={15} /> Aggiungi macchina</button></div>
+          {activeStep === 2 && (
+            <>
+          <section className="formSection interventionSectionV2 interventionStepPanel">
+            <div className="interventionSectionTitleV2 interventionSectionTitleV2--actions"><span className="interventionSectionIconV2"><InterventionIcon name="machine" /></span><div><h2>Macchine coinvolte</h2><p>Associa modello e numero di serie all’intervento.</p></div><button type="button" className="btn interventionAddMachineBtn" onClick={addMachine}><InterventionIcon name="plus" size={15} /> Aggiungi macchina</button></div>
             <div className="interventionMachinesGrid">
               {ensureMinMachines(form.machines).map((machine, index) => (
                 <div key={index} className="interventionMachineCardV2">
@@ -672,9 +756,17 @@ export default function Interventi() {
               ))}
             </div>
           </section>
+          <div className="interventionStepFooter">
+            <button type="button" className="btn interventionStepBack" onClick={() => setActiveStep(1)}>← Attività</button>
+            <button type="button" className="btn btnPrimary interventionStepNext" onClick={() => setActiveStep(3)}>Continua · Chiusura <span aria-hidden="true">→</span></button>
+          </div>
+            </>
+          )}
 
-          <section className="formSection interventionSectionV2 interventionClosureSection">
-            <div className="interventionSectionTitleV2"><span className="interventionSectionNumber">04</span><span className="interventionSectionIconV2"><InterventionIcon name="check" /></span><div><h2>Chiusura, collaudo e firme</h2><p>Completa le note tecniche e raccogli i dati necessari all’invio.</p></div></div>
+          {activeStep === 3 && (
+            <>
+          <section className="formSection interventionSectionV2 interventionClosureSection interventionStepPanel">
+            <div className="interventionSectionTitleV2"><span className="interventionSectionIconV2"><InterventionIcon name="check" /></span><div><h2>Chiusura, collaudo e firme</h2><p>Completa le note tecniche e raccogli i dati necessari all’invio.</p></div></div>
             <div className="interventionClosureGrid">
               <div className="interventionNotesPanel"><div className="interventionSubPanelHead"><span><InterventionIcon name="wrench" size={17} /></span><div><strong>Annotazioni intervento</strong><small>Note visibili anche nel PDF</small></div></div><textarea rows="11" value={form.notes} onChange={(e) => handleField("notes", e.target.value)} placeholder="Descrivi anomalie, attività eseguite, componenti sostituiti, verifiche finali..." /></div>
               <div className="interventionFinalPanel">
@@ -689,6 +781,10 @@ export default function Interventi() {
               </div>
             </div>
           </section>
+          <div className="interventionStepFooter interventionStepFooter--final">
+            <button type="button" className="btn interventionStepBack" onClick={() => setActiveStep(2)}>← Macchine</button>
+            <span>Ultimo passaggio: salva il foglio o invialo direttamente al cliente.</span>
+          </div>
 
           <div className="interventionActionDock">
             <div className="interventionActionStatus"><span className={`interventionActionDot ${selectedId ? "isSaved" : ""}`} /><div><strong>{selectedId ? `Foglio #${form.report_number || "—"}` : "Bozza non salvata"}</strong><span>{form.client_name || "Inserisci il cliente per iniziare"}</span></div></div>
@@ -698,6 +794,8 @@ export default function Interventi() {
               <button className="btn btnPrimary interventionSendBtn" type="button" onClick={() => sendByEmail()} disabled={sendingId === (selectedId || "draft")}><InterventionIcon name="send" size={16} />{sendingId === (selectedId || "draft") ? "Invio..." : "Invia email"}</button>
             </div>
           </div>
+            </>
+          )}
         </form>
       </div>
     </div>
