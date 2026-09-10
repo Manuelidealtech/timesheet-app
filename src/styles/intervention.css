@@ -1,71 +1,230 @@
-.interventionPage { width: 100%; }
-.interventionLayout { display: grid; grid-template-columns: 1fr; gap: 16px; }
-.interventionHistoryCard,.interventionFormCard { min-width: 0; }
-.interventionHistoryCard { padding: 0; overflow: visible; }
-.interventionHistoryCard::before { display: none; }
-.interventionHistorySummary { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 17px 18px; cursor: pointer; list-style: none; user-select: none; }
-.interventionHistorySummary::-webkit-details-marker { display: none; }
-.interventionHistoryTitle { margin-top: 2px; font-size: 16px; font-weight: 900; }
-.interventionHistoryHint { margin-top: 3px; color: var(--muted); font-size: 12px; }
-.interventionHistorySummaryMeta { display: flex; align-items: center; gap: 10px; }
-.interventionHistoryChevron { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--stroke); border-radius: 9px; color: var(--text-soft); font-size: 21px; transition: transform .2s ease; }
-.interventionHistoryCard[open] .interventionHistoryChevron { transform: rotate(180deg); }
-.interventionHistoryContent { padding: 0 18px 18px; border-top: 1px solid var(--stroke); }
-.interventionHistoryList { display: grid; grid-template-columns: repeat(auto-fill,minmax(250px,1fr)); gap: 11px; padding-top: 16px; max-height: 460px; overflow-y: auto; }
-.interventionHistoryItem { display: grid; gap: 9px; padding: 13px; border: 1px solid var(--stroke); border-radius: 15px; background: var(--panel-soft); }
-.interventionHistoryItem.active { border-color: color-mix(in srgb,var(--accent) 45%,transparent); background: color-mix(in srgb,var(--accent) 10%,var(--panel-soft)); box-shadow: 0 0 0 3px color-mix(in srgb,var(--accent) 8%,transparent); }
-.interventionHistoryMain { all: unset; display: block; width: 100%; cursor: pointer; }
-.interventionHistoryTop,.interventionHistoryMeta { display: flex; justify-content: space-between; gap: 9px; }
-.interventionHistoryTop { font-size: 12px; color: var(--text-soft); }
-.interventionHistoryTop strong { color: var(--text); font-size: 14px; }
-.interventionHistoryClient { margin: 6px 0 4px; font-weight: 850; }
-.interventionHistoryMeta { color: var(--muted); font-size: 11px; }
-.interventionDeleteBtn { width: 100%; min-height: 36px; }
-.interventionFormCard { width: 100%; }
-.formSection { min-width: 0; margin-bottom: 15px; padding: 17px; border: 1px solid var(--stroke); border-radius: 17px; background: var(--panel-soft); }
-.formSection:last-child { margin-bottom: 0; }
-.formSectionTitle { margin-bottom: 12px; font-size: 16px; font-weight: 900; }
-.interventionGridTop { align-items: end; }
-.interventionSectionHead { margin-bottom: 13px; }
-.interventionSectionActions { display: flex; flex-wrap: wrap; gap: 8px; }
-.interventionRowsTable { display: grid; gap: 12px; }
-.interventionRowCard,.machineCard { min-width: 0; padding: 13px; border: 1px solid var(--stroke); border-radius: 15px; background: color-mix(in srgb,var(--panel-soft) 88%,transparent); }
-.interventionRowCard--return { border-color: color-mix(in srgb,var(--accent-2) 30%,transparent); background: color-mix(in srgb,var(--accent-2) 7%,var(--panel-soft)); }
-.interventionRowCardHead { margin-bottom: 10px; }
-.badgeReturn { border-color: color-mix(in srgb,var(--accent-2) 32%,transparent); background: color-mix(in srgb,var(--accent-2) 12%,transparent); }
-.interventionRowGrid { display: grid; grid-template-columns: repeat(4,minmax(130px,1fr)); gap: 10px; }
-.interventionRowGrid .col-description { grid-column: span 2; }
-.interventionRowActions { display: flex; justify-content: flex-end; margin-top: 10px; }
-.machineCard { display: grid; gap: 10px; }
-.interventionActions { position: sticky; bottom: 10px; z-index: 4; padding: 11px; border: 1px solid var(--stroke); border-radius: 15px; background: color-mix(in srgb,var(--panel-strong) 90%,transparent); box-shadow: var(--shadow-soft); backdrop-filter: blur(16px); }
-.iosSwitchRow { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px 14px; border: 1px solid var(--stroke); border-radius: 14px; background: var(--input-bg); cursor: pointer; }
+.interventionPageV2 { gap: 14px; }
+.interventionHeroV2 { overflow: hidden; }
+.interventionHeroTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.interventionEyebrow,.interventionSectionKicker { display: inline-flex; color: var(--role-accent); font-size: 10px; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }
+.interventionHeroV2 .pageTitle { margin-top: 7px; }
+.interventionHeroV2 .pageSubtitle { max-width: 780px; margin-top: 8px; }
+.interventionNewBtn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: 0 0 auto; }
+.interventionHeroStats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin-top: 20px; }
+.interventionStatCard { min-width: 0; display: flex; align-items: center; gap: 11px; padding: 13px; border: 1px solid var(--stroke); border-radius: 14px; background: color-mix(in srgb,var(--panel-strong) 88%,transparent); box-shadow: var(--shadow-soft); }
+.interventionStatIcon { flex: 0 0 auto; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: var(--role-accent); border: 1px solid color-mix(in srgb,var(--role-accent) 16%,var(--stroke)); background: color-mix(in srgb,var(--role-accent) 9%,var(--panel-soft)); }
+.interventionStatIcon.isSuccess { color: var(--ok); border-color: color-mix(in srgb,var(--ok) 20%,var(--stroke)); background: color-mix(in srgb,var(--ok) 8%,var(--panel-soft)); }
+.interventionStatIcon.isWarning { color: var(--warn); border-color: color-mix(in srgb,var(--warn) 22%,var(--stroke)); background: color-mix(in srgb,var(--warn) 8%,var(--panel-soft)); }
+.interventionStatCard > div:last-child { min-width: 0; display: grid; gap: 1px; }
+.interventionStatCard small { color: var(--muted); font-size: 9px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.interventionStatCard strong { margin-top: 2px; font-size: 21px; line-height: 1; letter-spacing: -.035em; }
+.interventionStatCard > div:last-child > span { margin-top: 2px; overflow: hidden; color: var(--text-soft); font-size: 10px; white-space: nowrap; text-overflow: ellipsis; }
+.interventionStatCard--progress { gap: 10px; }
+.interventionProgressRing { --progress: 0deg; position: relative; flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--role-accent) var(--progress),color-mix(in srgb,var(--stroke) 70%,transparent) 0); }
+.interventionProgressRing::after { content: ""; position: absolute; inset: 4px; border-radius: inherit; background: var(--panel-strong); }
+.interventionProgressRing span { position: relative; z-index: 1; color: var(--text); font-size: 8.5px; font-weight: 900; }
+.interventionToast { margin: 0; }
+
+.interventionWorkspace { display: grid; grid-template-columns: minmax(255px,300px) minmax(0,1fr); gap: 12px; align-items: start; }
+.interventionArchivePanel { position: sticky; top: 16px; padding: 0; overflow: hidden; }
+.interventionArchiveHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 15px; border-bottom: 1px solid var(--stroke); }
+.interventionArchiveHead h2 { margin: 4px 0 0; font-size: 17px; letter-spacing: -.025em; }
+.interventionArchiveHead p { margin: 3px 0 0; color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+.interventionArchiveCount { flex: 0 0 auto; min-width: 29px; height: 29px; display: grid; place-items: center; padding: 0 7px; border: 1px solid color-mix(in srgb,var(--role-accent) 18%,var(--stroke)); border-radius: 9px; color: var(--role-accent); background: color-mix(in srgb,var(--role-accent) 8%,var(--panel-soft)); font-size: 11px; font-weight: 900; }
+.interventionArchiveSearch { position: relative; display: flex; align-items: center; margin: 11px 11px 7px; }
+.interventionArchiveSearch svg { position: absolute; left: 11px; color: var(--muted); pointer-events: none; }
+.interventionArchiveSearch input { min-height: 39px; padding-left: 35px; border-radius: 10px; font-size: 11.5px; }
+.interventionArchiveList { display: grid; gap: 6px; max-height: calc(100vh - 305px); min-height: 180px; padding: 4px 9px 10px; overflow-y: auto; scrollbar-width: thin; }
+.interventionArchiveItem { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 28px; align-items: stretch; gap: 4px; border: 1px solid var(--stroke); border-radius: 11px; background: var(--panel-soft); transition: .14s ease; }
+.interventionArchiveItem:hover { border-color: var(--stroke-strong); }
+.interventionArchiveItem.isActive { border-color: color-mix(in srgb,var(--role-accent) 34%,var(--stroke)); background: color-mix(in srgb,var(--role-accent) 7%,var(--panel-soft)); box-shadow: inset 3px 0 0 var(--role-accent); }
+.interventionArchiveMain { all: unset; min-width: 0; display: grid; gap: 6px; padding: 10px 8px 10px 11px; cursor: pointer; }
+.interventionArchiveTopline { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.interventionReportNumber { color: var(--role-accent); font-size: 10px; font-weight: 900; }
+.interventionMailStatus { display: inline-flex; align-items: center; min-height: 20px; padding: 2px 6px; border-radius: 6px; color: var(--warn); background: color-mix(in srgb,var(--warn) 8%,transparent); font-size: 8.5px; font-weight: 850; }
+.interventionMailStatus.isSent { color: var(--ok); background: color-mix(in srgb,var(--ok) 8%,transparent); }
+.interventionArchiveMain > strong { overflow: hidden; color: var(--text); font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; }
+.interventionArchiveMeta { display: flex; flex-wrap: wrap; gap: 4px 8px; color: var(--muted); font-size: 9.5px; }
+.interventionArchiveMeta span { display: inline-flex; align-items: center; gap: 4px; }
+.interventionArchiveDelete { align-self: center; justify-self: center; width: 27px; height: 27px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; transition: .14s ease; }
+.interventionArchiveDelete:hover { color: var(--danger); background: color-mix(in srgb,var(--danger) 9%,transparent); }
+.interventionArchiveEmpty { min-height: 145px; display: grid; place-items: center; align-content: center; gap: 6px; padding: 18px 10px; color: var(--muted); text-align: center; font-size: 11px; }
+.interventionArchiveEmpty strong { color: var(--text-soft); font-size: 12px; }
+.interventionArchiveEmpty span { max-width: 210px; font-size: 10px; line-height: 1.4; }
+
+.interventionFormV2 { min-width: 0; display: grid; gap: 10px; }
+.interventionDocumentBar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--stroke); border-radius: 14px; background: var(--panel-strong); box-shadow: var(--shadow-soft); }
+.interventionDocumentIdentity { min-width: 0; display: flex; align-items: center; gap: 9px; }
+.interventionDocumentIcon { flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: var(--role-accent); background: color-mix(in srgb,var(--role-accent) 9%,var(--panel-soft)); }
+.interventionDocumentIdentity > div { display: grid; gap: 1px; }
+.interventionDocumentIdentity span { color: var(--muted); font-size: 9px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+.interventionDocumentIdentity strong { font-size: 14px; }
+.interventionDocumentMeta { min-width: 0; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; color: var(--text-soft); font-size: 10.5px; }
+.interventionDocumentMeta > span { padding: 4px 7px; border: 1px solid var(--stroke); border-radius: 7px; background: var(--panel-soft); }
+.interventionDocumentMeta .interventionSentPill { color: var(--ok); border-color: color-mix(in srgb,var(--ok) 18%,var(--stroke)); background: color-mix(in srgb,var(--ok) 7%,transparent); font-weight: 850; }
+
+.interventionSectionV2 { margin: 0; padding: 16px; overflow: visible; }
+.interventionSectionTitleV2 { display: grid; grid-template-columns: 32px 34px minmax(0,1fr); gap: 9px; align-items: center; margin-bottom: 14px; }
+.interventionSectionTitleV2--actions { grid-template-columns: 32px 34px minmax(0,1fr) auto; }
+.interventionSectionNumber { color: var(--muted); font-size: 10px; font-weight: 950; letter-spacing: .08em; }
+.interventionSectionIconV2 { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid color-mix(in srgb,var(--role-accent) 17%,var(--stroke)); border-radius: 10px; color: var(--role-accent); background: color-mix(in srgb,var(--role-accent) 8%,var(--panel-soft)); }
+.interventionSectionTitleV2 h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+.interventionSectionTitleV2 p { margin: 2px 0 0; color: var(--muted); font-size: 10.5px; }
+.interventionSectionButtons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.interventionSectionButtons .btn,.interventionAddMachineBtn { display: inline-flex; align-items: center; gap: 6px; }
+.interventionPrimaryGrid { display: grid; grid-template-columns: 1.5fr 1fr .8fr .8fr; gap: 9px; }
+.interventionFieldWide { min-width: 0; }
+.interventionTravelStrip { display: grid; grid-template-columns: 170px repeat(4,minmax(0,1fr)); gap: 8px; align-items: end; margin-top: 10px; padding: 10px; border: 1px solid var(--stroke); border-radius: 12px; background: var(--panel-soft); }
+.interventionTravelTitle { min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 6px; }
+.interventionTravelTitle > span { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 9px; color: var(--role-accent-2); background: color-mix(in srgb,var(--role-accent-2) 9%,transparent); }
+.interventionTravelTitle > div { display: grid; gap: 1px; }
+.interventionTravelTitle strong { font-size: 11.5px; }
+.interventionTravelTitle small { color: var(--muted); font-size: 9px; }
+
+.interventionRowsV2 { display: grid; gap: 7px; }
+.interventionActivityCard { padding: 10px; border: 1px solid var(--stroke); border-radius: 12px; background: var(--panel-soft); }
+.interventionActivityCard.isReturn { border-color: color-mix(in srgb,var(--role-accent-2) 24%,var(--stroke)); background: color-mix(in srgb,var(--role-accent-2) 5%,var(--panel-soft)); }
+.interventionActivityHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.interventionActivityHead > div { display: flex; align-items: center; gap: 7px; }
+.interventionActivityIndex { min-width: 25px; height: 25px; display: grid; place-items: center; border-radius: 7px; color: var(--role-accent); background: color-mix(in srgb,var(--role-accent) 9%,transparent); font-size: 9px; font-weight: 950; }
+.interventionActivityCard.isReturn .interventionActivityIndex { color: var(--role-accent-2); background: color-mix(in srgb,var(--role-accent-2) 9%,transparent); }
+.interventionActivityHead strong { font-size: 11.5px; }
+.interventionMiniDanger { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; color: var(--muted); background: transparent; cursor: pointer; transition: .14s ease; }
+.interventionMiniDanger:hover { color: var(--danger); background: color-mix(in srgb,var(--danger) 9%,transparent); }
+.interventionActivityGrid { display: grid; grid-template-columns: 130px repeat(4,minmax(82px,.7fr)) 62px 135px minmax(185px,1.45fr); gap: 6px; align-items: end; }
+.interventionMiniField { min-width: 0; display: grid; gap: 4px; }
+.interventionMiniField > span { color: var(--muted); font-size: 8.5px; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+.interventionMiniField input { min-height: 38px; padding: 8px 9px; border-radius: 9px; font-size: 11px; }
+.interventionMiniField--qty input { text-align: center; }
+
+.interventionMachinesGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.interventionMachineCardV2 { min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; padding: 10px; border: 1px solid var(--stroke); border-radius: 12px; background: var(--panel-soft); }
+.interventionMachineHead { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding-bottom: 7px; border-bottom: 1px solid color-mix(in srgb,var(--stroke) 75%,transparent); }
+.interventionMachineHead > div { display: flex; align-items: baseline; gap: 6px; }
+.interventionMachineHead span { color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; }
+.interventionMachineHead strong { color: var(--role-accent); font-size: 12px; }
+
+.interventionClosureSection { padding-bottom: 13px; }
+.interventionClosureGrid { display: grid; grid-template-columns: minmax(0,.82fr) minmax(410px,1.18fr); gap: 9px; align-items: start; }
+.interventionNotesPanel,.interventionFinalPanel > div { border: 1px solid var(--stroke); border-radius: 12px; background: var(--panel-soft); }
+.interventionNotesPanel { padding: 11px; }
+.interventionNotesPanel textarea { min-height: 372px; margin-top: 9px; resize: vertical; }
+.interventionSubPanelHead { display: flex; align-items: center; gap: 8px; }
+.interventionSubPanelHead > span { flex: 0 0 auto; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; color: var(--role-accent); background: color-mix(in srgb,var(--role-accent) 8%,transparent); }
+.interventionSubPanelHead > div { display: grid; gap: 1px; }
+.interventionSubPanelHead strong { font-size: 11.5px; }
+.interventionSubPanelHead small { color: var(--muted); font-size: 9px; }
+.interventionFinalPanel { display: grid; gap: 8px; }
+.interventionTestCard,.interventionDeliveryCard,.interventionSignaturePanel { padding: 10px; }
+.interventionSwitchV2 { margin: 0 0 9px; }
+.interventionSwitchV2 > div { display: grid; gap: 1px; }
+.interventionSwitchV2 small { color: var(--muted); font-size: 9px; font-weight: 500; }
+.interventionTestGrid { gap: 8px; }
+.interventionTestCard > .formGroup { margin-top: 8px; }
+.interventionDeliveryCard .formGroup { margin-top: 9px; }
+.interventionDeliveryStatus { display: flex; align-items: center; gap: 6px; margin-top: 7px; padding: 7px 8px; border: 1px solid var(--stroke); border-radius: 8px; color: var(--muted); background: var(--panel-strong); font-size: 9.5px; }
+.interventionDeliveryStatus > span { display: grid; place-items: center; }
+.interventionDeliveryStatus.isReady { color: var(--ok); border-color: color-mix(in srgb,var(--ok) 18%,var(--stroke)); background: color-mix(in srgb,var(--ok) 5%,var(--panel-strong)); }
+.interventionSignaturePanel .signaturePadShell { margin-top: 9px; }
+
+.interventionActionDock { position: sticky; bottom: 10px; z-index: 8; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border: 1px solid var(--stroke-strong); border-radius: 14px; background: color-mix(in srgb,var(--panel-strong) 94%,transparent); box-shadow: 0 16px 38px rgba(4,12,24,.18); backdrop-filter: blur(16px); }
+.interventionActionStatus { min-width: 0; display: flex; align-items: center; gap: 8px; padding-left: 3px; }
+.interventionActionDot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 4px color-mix(in srgb,var(--warn) 10%,transparent); }
+.interventionActionDot.isSaved { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb,var(--ok) 10%,transparent); }
+.interventionActionStatus > div { min-width: 0; display: grid; gap: 1px; }
+.interventionActionStatus strong { overflow: hidden; font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+.interventionActionStatus span { overflow: hidden; color: var(--muted); font-size: 9.5px; white-space: nowrap; text-overflow: ellipsis; }
+.interventionActionButtons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.interventionActionButtons .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.interventionPdfBtn { min-width: 72px; }
+.interventionSaveBtn { min-width: 132px; }
+.interventionSendBtn { min-width: 120px; background: linear-gradient(135deg,color-mix(in srgb,var(--role-accent-2) 88%,var(--role-accent)),var(--role-accent-2)); }
+
+/* iOS-like switch */
+.iosSwitchRow { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 10px 11px; border: 1px solid var(--stroke); border-radius: 10px; background: var(--input-bg); cursor: pointer; }
 .iosSwitchText { font-weight: 800; }
 .iosSwitchInput { position: absolute; opacity: 0; pointer-events: none; }
-.iosSwitchSlider { position: relative; flex: 0 0 auto; width: 49px; height: 29px; border: 1px solid var(--stroke); border-radius: 999px; background: color-mix(in srgb,var(--text) 13%,transparent); transition: .2s ease; }
-.iosSwitchSlider::before { content: ""; position: absolute; top: 3px; left: 3px; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 2px 7px rgba(0,0,0,.22); transition: transform .2s ease; }
-.iosSwitchInput:checked + .iosSwitchSlider { border-color: transparent; background: linear-gradient(135deg,var(--accent),var(--accent-2)); }
-.iosSwitchInput:checked + .iosSwitchSlider::before { transform: translateX(20px); }
-
-@media (min-width: 1250px) { .interventionHistoryList { grid-template-columns: repeat(4,minmax(220px,1fr)); } .interventionRowGrid { grid-template-columns: 155px repeat(4,minmax(95px,110px)) 80px 135px minmax(230px,1fr); } .interventionRowGrid .col-description { grid-column: auto; } }
-@media (max-width: 900px) { .interventionRowGrid { grid-template-columns: repeat(2,minmax(0,1fr)); } .interventionRowGrid .col-description { grid-column: span 2; } }
-@media (max-width: 720px) { .interventionPage .pageHeader > .row { display: grid; grid-template-columns: 1fr; } .interventionHistorySummary { padding: 14px; } .interventionHistoryHint { display: none; } .interventionHistoryContent { padding: 0 12px 12px; } .interventionHistoryList { grid-template-columns: 1fr; max-height: 420px; } .formSection { padding: 13px; border-radius: 14px; } .interventionSectionActions { display: grid; grid-template-columns: 1fr; width: 100%; } .interventionRowGrid { grid-template-columns: 1fr; } .interventionRowGrid .col-description { grid-column: auto; } .interventionRowActions .btn,.interventionSectionActions .btn,.interventionActions .btn { width: 100%; } .interventionActions { position: static; display: grid; grid-template-columns: 1fr; } }
-@media (max-width: 480px) { .interventionHistorySummary { align-items: flex-start; } .interventionHistorySummaryMeta { flex-direction: column-reverse; gap: 5px; } .interventionHistoryTop,.interventionHistoryMeta { flex-direction: column; gap: 3px; } .interventionFormCard { padding: 10px; } .formSection { padding: 11px; margin-bottom: 10px; } }
+.iosSwitchSlider { position: relative; flex: 0 0 auto; width: 46px; height: 27px; border: 1px solid var(--stroke); border-radius: 999px; background: color-mix(in srgb,var(--text) 13%,transparent); transition: .2s ease; }
+.iosSwitchSlider::before { content: ""; position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; box-shadow: 0 2px 7px rgba(0,0,0,.22); transition: transform .2s ease; }
+.iosSwitchInput:checked + .iosSwitchSlider { border-color: transparent; background: linear-gradient(135deg,var(--role-accent),var(--role-accent-2)); }
+.iosSwitchInput:checked + .iosSwitchSlider::before { transform: translateX(19px); }
 
 /* Firma cliente manuale */
-.signaturePadShell { position: relative; display: grid; gap: 10px; margin-top: 12px; padding: 13px; border: 1px solid var(--stroke); border-radius: 15px; background: var(--input-bg); }
-.signaturePadTopline { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.signaturePadActions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.signatureSavedBadge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border-radius: 999px; background: color-mix(in srgb,#16a36a 14%,transparent); border: 1px solid color-mix(in srgb,#16a36a 28%,transparent); color: #13835a; font-size: 11px; font-weight: 850; }
-.signatureClearBtn { min-height: 34px; padding: 7px 11px; font-size: 12px; }
-.signaturePadCanvas { display: block; width: 100%; height: 170px; border: 1.5px dashed color-mix(in srgb,var(--text) 24%,transparent); border-radius: 12px; background: #fff; cursor: crosshair; touch-action: none; user-select: none; -webkit-user-select: none; }
+.signaturePadShell { position: relative; display: grid; gap: 8px; padding: 0; border: 0; background: transparent; }
+.signaturePadTopline { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.signaturePadTopline > div:first-child { display: none; }
+.signaturePadActions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.signatureSavedBadge { display: inline-flex; align-items: center; min-height: 26px; padding: 0 8px; border-radius: 7px; background: color-mix(in srgb,var(--ok) 9%,transparent); border: 1px solid color-mix(in srgb,var(--ok) 20%,transparent); color: var(--ok); font-size: 9px; font-weight: 850; }
+.signatureClearBtn { min-height: 28px; padding: 5px 8px; border-radius: 8px; font-size: 9.5px; }
+.signaturePadCanvas { display: block; width: 100%; height: 160px; border: 1.5px dashed color-mix(in srgb,var(--text) 20%,transparent); border-radius: 10px; background: #fff; cursor: crosshair; touch-action: none; user-select: none; -webkit-user-select: none; }
 .signaturePadCanvas.isDisabled { opacity: .65; cursor: not-allowed; }
-.signaturePadHint { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); pointer-events: none; color: #98a2b3; font-weight: 750; font-size: 14px; }
-.interventionEmailHint { margin-top: 6px; }
+.signaturePadHint { position: absolute; left: 50%; bottom: 67px; transform: translateX(-50%); pointer-events: none; color: #a3acba; font-weight: 750; font-size: 12px; }
 
-@media (max-width: 720px) {
-  .signaturePadTopline { display: grid; grid-template-columns: 1fr; }
-  .signaturePadActions { justify-content: stretch; }
-  .signaturePadActions .btn { width: 100%; }
+@media (max-width: 1280px) {
+  .interventionWorkspace { grid-template-columns: 250px minmax(0,1fr); }
+  .interventionActivityGrid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .interventionMiniField--description { grid-column: span 2; }
+  .interventionMachinesGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .interventionPrimaryGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .interventionTravelStrip { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .interventionTravelTitle { grid-column: 1 / -1; }
+}
+
+@media (max-width: 1040px) {
+  .interventionWorkspace { grid-template-columns: 1fr; }
+  .interventionArchivePanel { position: static; }
+  .interventionArchiveList { grid-template-columns: repeat(3,minmax(0,1fr)); max-height: 350px; }
+  .interventionArchiveItem { grid-template-columns: minmax(0,1fr) 28px; }
+  .interventionHeroStats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .interventionClosureGrid { grid-template-columns: 1fr; }
+  .interventionNotesPanel textarea { min-height: 180px; }
+}
+
+@media (max-width: 760px) {
+  .interventionHeroTop { flex-direction: column; align-items: stretch; }
+  .interventionNewBtn { width: 100%; }
+  .interventionArchiveList { grid-template-columns: 1fr 1fr; }
+  .interventionDocumentBar { flex-direction: column; align-items: stretch; }
+  .interventionDocumentMeta { justify-content: flex-start; }
+  .interventionSectionTitleV2,.interventionSectionTitleV2--actions { grid-template-columns: 28px 32px minmax(0,1fr); }
+  .interventionSectionButtons,.interventionAddMachineBtn { grid-column: 1 / -1; width: 100%; }
+  .interventionSectionButtons { display: grid; grid-template-columns: 1fr 1fr; }
+  .interventionSectionButtons .btn,.interventionAddMachineBtn { width: 100%; }
+  .interventionPrimaryGrid { grid-template-columns: 1fr; }
+  .interventionTravelStrip { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .interventionActivityGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .interventionMiniField--description { grid-column: span 2; }
+  .interventionMachinesGrid { grid-template-columns: 1fr; }
+  .interventionMachineCardV2 { grid-template-columns: 1fr; }
+  .interventionMachineHead { grid-column: auto; }
+  .interventionActionDock { position: static; flex-direction: column; align-items: stretch; }
+  .interventionActionButtons { display: grid; grid-template-columns: 1fr 1fr; }
+  .interventionSendBtn { grid-column: 1 / -1; }
+  .interventionActionButtons .btn { width: 100%; }
+}
+
+@media (max-width: 540px) {
+  .interventionHeroStats { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .interventionStatCard { align-items: flex-start; padding: 10px; gap: 8px; }
+  .interventionStatIcon { width: 31px; height: 31px; border-radius: 9px; }
+  .interventionStatIcon svg { width: 15px; height: 15px; }
+  .interventionStatCard strong { font-size: 18px; }
+  .interventionStatCard > div:last-child > span { font-size: 9px; }
+  .interventionProgressRing { width: 34px; height: 34px; }
+  .interventionArchiveList { grid-template-columns: 1fr; max-height: 330px; }
+  .interventionSectionV2 { padding: 12px; }
+  .interventionSectionTitleV2,.interventionSectionTitleV2--actions { grid-template-columns: 26px 30px minmax(0,1fr); gap: 7px; }
+  .interventionSectionIconV2 { width: 30px; height: 30px; border-radius: 9px; }
+  .interventionSectionIconV2 svg { width: 15px; height: 15px; }
+  .interventionSectionTitleV2 h2 { font-size: 14px; }
+  .interventionSectionTitleV2 p { font-size: 9.5px; }
+  .interventionSectionButtons { grid-template-columns: 1fr; }
+  .interventionTravelStrip { grid-template-columns: 1fr 1fr; padding: 8px; }
+  .interventionActivityGrid { grid-template-columns: 1fr 1fr; }
+  .interventionMiniField--description { grid-column: 1 / -1; }
+  .interventionClosureGrid { gap: 7px; }
+  .interventionTestGrid { grid-template-columns: 1fr; }
   .signaturePadCanvas { height: 190px; }
-  .signaturePadHint { bottom: 84px; }
+  .signaturePadHint { bottom: 82px; }
+}
+
+@media (max-width: 390px) {
+  .interventionHeroStats { grid-template-columns: 1fr; }
+  .interventionTravelStrip,.interventionActivityGrid { grid-template-columns: 1fr; }
+  .interventionMiniField--description { grid-column: auto; }
 }

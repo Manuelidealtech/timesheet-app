@@ -191,6 +191,75 @@ export default function DepartmentTimesheetPage({ department }) {
     }
   }, [employeeId, isOffice, linkedEmployeeId]);
 
+  // Mantiene il menu commesse sempre allineato con la scansione del file server.
+  // Quando l'admin preme "Scansiona ora", il server aggiorna la tabella CDL e
+  // gli utenti vedono le nuove commesse senza dover ricaricare manualmente l'app.
+  useEffect(() => {
+    let active = true;
+    let refreshing = false;
+
+    const refreshCdlOptions = async () => {
+      if (refreshing) return;
+      refreshing = true;
+
+      try {
+        const { data, error } = await supabase
+          .from('cdl')
+          .select('id, code, name')
+          .eq('is_active', true)
+          .order('code', { ascending: true })
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+        if (!active) return;
+
+        const nextRows = data || [];
+        setCdl(nextRows);
+        setCdlId((currentId) => {
+          if (currentId && nextRows.some((item) => String(item.id) === String(currentId))) {
+            return currentId;
+          }
+          return nextRows[0] ? String(nextRows[0].id) : '';
+        });
+      } catch (refreshError) {
+        console.error('Aggiornamento automatico commesse fallito:', refreshError);
+      } finally {
+        refreshing = false;
+      }
+    };
+
+    // Aggiornamento periodico: leggero (solo anagrafica CDL) e indipendente da Realtime.
+    const intervalId = window.setInterval(refreshCdlOptions, 10000);
+
+    // Aggiorna immediatamente quando l'utente torna sull'app/tab.
+    const handleFocus = () => refreshCdlOptions();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') refreshCdlOptions();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // Se Realtime e' abilitato sulla tabella CDL, l'aggiornamento diventa istantaneo.
+    // Il polling sopra resta come fallback e non richiede configurazioni Supabase aggiuntive.
+    const channel = supabase
+      .channel(`cdl-timesheet-${normalizedDepartment || 'all'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cdl' },
+        () => refreshCdlOptions(),
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      supabase.removeChannel(channel);
+    };
+  }, [normalizedDepartment]);
+
   async function onSave(event) {
     event.preventDefault();
     setErr('');
@@ -254,82 +323,69 @@ export default function DepartmentTimesheetPage({ department }) {
   }
 
   return (
-    <div className="container pageShell">
-      <section className="pageHero">
+    <div className="container pageShell timesheetEntryPage">
+      <section className="pageHero timesheetEntryHero">
         <div className="pageHeader">
           <div className="pageHeaderMain">
+            <span className="dailyReportEyebrow">Nuova registrazione</span>
             <h1 className="pageTitle">{pageTitle}</h1>
             <p className="pageSubtitle">
-              Compilazione timesheet dedicata al reparto {pageTitle.toLowerCase()}.
-              {isOffice && selectedEmployeeName ? ` Accesso collegato a ${selectedEmployeeName}.` : ''}
+              Registra l’attività svolta nel reparto {pageTitle.toLowerCase()}.
+              {isOffice && selectedEmployeeName ? ` Profilo collegato: ${selectedEmployeeName}.` : ''}
             </p>
           </div>
-          <span className="badge">{pageTitle}</span>
+          <div className="timesheetHeroStatus">
+            <span>Durata attuale</span>
+            <strong>{fmtMinutes(previewMinutes)}</strong>
+          </div>
         </div>
+      </section>
 
-        <div className="pageBody">
-          <div className="split">
-        <div className="card">
+      <div className="split timesheetEntryLayout">
+        <section className="card timesheetFormCard">
           <div className="cardHeader">
             <div>
-              <div className="sub">Nuova registrazione</div>
-              <div style={{ fontWeight: 750, marginTop: 4 }}>Inserisci attività</div>
+              <span className="dailyReportEyebrow">Attività</span>
+              <h2 className="timesheetCardTitle">Compila il timesheet</h2>
             </div>
-            <span className="pill">{previewMinutes} min</span>
+            <span className="pill timesheetDurationBadge">{previewMinutes} min</span>
           </div>
 
-          <hr className="sep" />
+          <form onSubmit={onSave} className="grid timesheetEntryForm">
+            <div className="timesheetPrimaryFields">
+              <div className="formGroup">
+                <label>{isOffice ? 'Il tuo profilo collegato' : 'Dipendente'}</label>
+                <select value={employeeId} onChange={(event) => setEmployeeId(event.target.value)} disabled={isOffice}>
+                  {employees.map((item) => <option key={item.id} value={item.id}>{item.full_name}</option>)}
+                </select>
+              </div>
 
-          <form onSubmit={onSave} className="grid">
-            <div className="formGroup">
-              <label>{isOffice ? 'Il tuo profilo collegato' : 'Dipendente'}</label>
-              <select
-                value={employeeId}
-                onChange={(event) => setEmployeeId(event.target.value)}
-                disabled={isOffice}
-              >
-                {employees.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.full_name}
-                  </option>
-                ))}
-              </select>
+              <div className="formGroup">
+                <label>Commessa / CDL</label>
+                <select value={cdlId} onChange={(event) => setCdlId(event.target.value)}>
+                  {cdl.map((item) => (
+                    <option key={item.id} value={item.id}>{item.code ? `${item.code} — ` : ''}{item.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="formGroup">
+                <label>Lavorazione</label>
+                <select value={lavId} onChange={(event) => setLavId(event.target.value)}>
+                  {lavorazioni.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                </select>
+              </div>
             </div>
 
-            <div className="formGroup">
-              <label>Commessa / CDL</label>
-              <select value={cdlId} onChange={(event) => setCdlId(event.target.value)}>
-                {cdl.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.code ? `${item.code} — ` : ''}
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="formGroup">
-              <label>Lavorazione</label>
-              <select value={lavId} onChange={(event) => setLavId(event.target.value)}>
-                {lavorazioni.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid3">
+            <div className="timesheetTimeGrid">
               <div className="formGroup">
                 <label>Data</label>
                 <input type="date" value={workDate} onChange={(event) => setWorkDate(event.target.value)} />
               </div>
-
               <div className="formGroup">
                 <label>Dalle</label>
                 <input type="time" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
               </div>
-
               <div className="formGroup">
                 <label>Alle</label>
                 <input type="time" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
@@ -337,79 +393,56 @@ export default function DepartmentTimesheetPage({ department }) {
             </div>
 
             <div className="formGroup">
-              <label>Note</label>
-              <textarea
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                placeholder={`Scrivi cosa è stato fatto nel reparto ${pageTitle.toLowerCase()}...`}
-              />
+              <label>Note attività</label>
+              <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder={`Descrivi brevemente cosa è stato fatto in ${pageTitle.toLowerCase()}...`} />
             </div>
 
             {err && <div className="toast err">{err}</div>}
             {ok && <div className="toast ok">{ok}</div>}
 
-            <div className="row">
-              <button className="btn btnPrimary" disabled={saving}>
-                {saving ? 'Salvataggio...' : 'Salva'}
-              </button>
-              <div className="sub">
-                Totale: <b>{fmtMinutes(previewMinutes)}</b>
+            <div className="timesheetFormActions">
+              <div className="timesheetFormTotal">
+                <span>Totale</span>
+                <strong>{fmtMinutes(previewMinutes)}</strong>
               </div>
-              <div className="spacer" />
-              <span className="sub">
-                {isOffice
-                  ? 'Puoi compilare solo il tuo timesheet personale.'
-                  : 'Il reparto visualizza solo i propri inserimenti.'}
-              </span>
+              <button className="btn btnPrimary timesheetSaveBtn" disabled={saving}>
+                {saving ? 'Salvataggio...' : 'Salva timesheet'}
+              </button>
             </div>
           </form>
-        </div>
+        </section>
 
-        <div className="card">
+        <aside className="card timesheetLatestCard">
           <div className="cardHeader">
             <div>
-              <div className="sub">Ultimi inserimenti</div>
-              <div style={{ fontWeight: 750, marginTop: 4 }}>{selectedEmployeeName || '—'}</div>
+              <span className="dailyReportEyebrow">Cronologia rapida</span>
+              <h2 className="timesheetCardTitle">Ultimi inserimenti</h2>
+              <p className="sub">{selectedEmployeeName || '—'}</p>
             </div>
             <span className="badge">Ultimi 12</span>
           </div>
 
-          <hr className="sep" />
-
           {loadingLatest ? (
-            <div className="sub">Caricamento...</div>
+            <div className="reportState reportStateNeutral">Caricamento...</div>
           ) : (
-            <div className="grid" style={{ gap: 10 }}>
+            <div className="recentEntryList">
               {latest.map((item) => (
-                <div key={item.id} className="kpi" style={{ padding: 12 }}>
-                  <div className="row" style={{ justifyContent: 'space-between' }}>
+                <article key={item.id} className="recentEntryCard">
+                  <div className="recentEntryTop">
                     <span className="pill ok">{fmtMinutes(item.minutes || 0)}</span>
-                    <span className="sub">{item.work_date}</span>
+                    <time>{item.work_date}</time>
                   </div>
-
-                  <div style={{ marginTop: 8, fontWeight: 700 }}>
-                    {String(item.start_time).slice(0, 5)} → {String(item.end_time).slice(0, 5)}
-                  </div>
-
-                  <div className="sub" style={{ marginTop: 6 }}>
-                    <b>CDL:</b> {item.cdl?.code ? `${item.cdl.code} — ` : ''}
-                    {item.cdl?.name}
-                  </div>
-                  <div className="sub" style={{ marginTop: 2 }}>
-                    <b>Lav:</b> {item.lavorazioni?.name}
-                  </div>
-
-                  {item.note && <div className="sub" style={{ marginTop: 8, opacity: 0.85 }}>{item.note}</div>}
-                </div>
+                  <strong className="recentEntryTime">{String(item.start_time).slice(0, 5)} → {String(item.end_time).slice(0, 5)}</strong>
+                  <div className="recentEntryMeta"><span>CDL</span><b>{item.cdl?.code ? `${item.cdl.code} — ` : ''}{item.cdl?.name}</b></div>
+                  <div className="recentEntryMeta"><span>Lav.</span><b>{item.lavorazioni?.name}</b></div>
+                  {item.note && <p className="recentEntryNote">{item.note}</p>}
+                </article>
               ))}
-
-              {!latest.length && <div className="sub">Nessun inserimento recente per questo dipendente.</div>}
+              {!latest.length && <div className="reportState reportStateNeutral">Nessun inserimento recente per questo dipendente.</div>}
             </div>
           )}
-        </div>
-          </div>
-        </div>
-      </section>
+        </aside>
+      </div>
     </div>
   );
 }

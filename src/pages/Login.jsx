@@ -33,7 +33,7 @@ export default function Login() {
 
       <section className="loginShell" aria-label="Accesso Timesheet">
         <aside className="loginIntro">
-          <div className="loginBrandMark">IT</div>
+          <div className="loginBrandMark"><img src="/icon-192.png" alt="Timesheet" /></div>
           <span className="loginEyebrow">Idealtech workspace</span>
           <h1>Il lavoro di ogni giorno, registrato e analizzato.</h1>
           <p>

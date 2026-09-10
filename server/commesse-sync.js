@@ -119,21 +119,34 @@ function parseCommessaFolder(folderName) {
   };
 }
 
+function isPlaceholderCommessaCode(code) {
+  return normalize(code) === '0000';
+}
+
 function findMatchingCdl(folderName, parsed, cdlRows) {
   const normalizedFolder = normalize(folderName);
   const parsedCode = normalize(parsed.code);
   const parsedName = normalize(parsed.name);
 
-  const exactCode = cdlRows.find((row) => parsedCode && normalize(row.code) === parsedCode);
-  if (exactCode) return exactCode;
-
+  // Il nome e' il riferimento piu affidabile per le revisioni senza numero commessa.
+  // Piu cartelle possono infatti iniziare con 0000, ma devono diventare CDL distinte.
   const exactName = cdlRows.find((row) => parsedName && normalize(row.name) === parsedName);
   if (exactName) return exactName;
+
+  // Per le commesse normali il codice a 4 cifre resta il riferimento principale.
+  // 0000 e' invece un prefisso tecnico/placeholder e NON deve unire revisioni diverse.
+  if (parsedCode && !isPlaceholderCommessaCode(parsed.code)) {
+    const exactCode = cdlRows.find((row) => normalize(row.code) === parsedCode);
+    if (exactCode) return exactCode;
+  }
 
   return cdlRows.find((row) => {
     const code = normalize(row.code);
     const name = normalize(row.name);
-    return (code && normalizedFolder.startsWith(`${code} `)) || (name && normalizedFolder.includes(name));
+
+    if (name && normalizedFolder.includes(name)) return true;
+    if (!code || isPlaceholderCommessaCode(code)) return false;
+    return normalizedFolder.startsWith(`${code} `);
   }) || null;
 }
 

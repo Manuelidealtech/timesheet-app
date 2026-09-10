@@ -7,9 +7,49 @@ import TimesheetEditModal from '../components/TimesheetEditModal';
 import { DEPARTMENT_LABELS } from '../lib/access';
 
 function fmtMinutes(m) {
-  const h = Math.floor(m / 60);
-  const mm = m % 60;
+  const safe = Number(m) || 0;
+  const h = Math.floor(safe / 60);
+  const mm = safe % 60;
   return `${h}h ${String(mm).padStart(2, '0')}m`;
+}
+
+function compactDate(value) {
+  if (!value) return { day: '—', month: '' };
+  const parsed = dayjs(value);
+  if (!parsed.isValid()) return { day: value, month: '' };
+  return {
+    day: parsed.format('DD'),
+    month: parsed.format('MMM').replace('.', '').toUpperCase(),
+  };
+}
+
+function Icon({ name, size = 18 }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.9,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  };
+
+  const paths = {
+    clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
+    list: <><path d="M8 6h11M8 12h11M8 18h11"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></>,
+    briefcase: <><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/></>,
+    search: <><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
+    filter: <><path d="M4 6h16M7 12h10M10 18h4"/></>,
+    edit: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></>,
+    trash: <><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"/></>,
+    refresh: <><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M6.1 9A7 7 0 0 1 18 6l2 5M4 13l2 5a7 7 0 0 0 11.9-3"/></>,
+    chevron: <path d="m9 18 6-6-6-6"/>,
+  };
+
+  return <svg {...common}>{paths[name] || paths.list}</svg>;
 }
 
 export default function Storico() {
@@ -164,9 +204,33 @@ export default function Storico() {
   }, [rows, q]);
 
   const totalMinutes = useMemo(
-    () => filteredRows.reduce((acc, r) => acc + (r.minutes || 0), 0),
+    () => filteredRows.reduce((acc, r) => acc + (Number(r.minutes) || 0), 0),
     [filteredRows]
   );
+
+  const uniqueDays = useMemo(
+    () => new Set(filteredRows.map((row) => row.work_date).filter(Boolean)).size,
+    [filteredRows]
+  );
+
+  const uniqueCommesse = useMemo(
+    () => new Set(filteredRows.map((row) => row.cdl_id).filter(Boolean)).size,
+    [filteredRows]
+  );
+
+  const averageMinutes = uniqueDays ? Math.round(totalMinutes / uniqueDays) : 0;
+
+  const selectedEmployeeName = useMemo(() => {
+    if (!employeeId) return isAdmin ? 'Tutti i dipendenti' : 'Profilo corrente';
+    return employees.find((employee) => String(employee.id) === String(employeeId))?.full_name || 'Dipendente';
+  }, [employeeId, employees, isAdmin]);
+
+  const periodLabel = useMemo(() => {
+    const start = dayjs(from);
+    const end = dayjs(to);
+    if (!start.isValid() || !end.isValid()) return '';
+    return `${start.format('DD MMM')} – ${end.format('DD MMM YYYY')}`;
+  }, [from, to]);
 
   async function onDelete(row) {
     if (!isAdmin) return;
@@ -175,7 +239,7 @@ export default function Storico() {
     try {
       setLoading(true);
       await deleteTimesheet(row.id);
-      setOk('Eliminato ✅');
+      setOk('Timesheet eliminato');
       await load();
     } catch (e2) {
       console.error(e2);
@@ -192,7 +256,7 @@ export default function Storico() {
       setErr('');
       setOk('');
       await updateTimesheet(editRow.id, patch);
-      setOk('Modificato ✅');
+      setOk('Timesheet aggiornato');
       setEditRow(null);
       await load();
     } catch (e2) {
@@ -204,30 +268,99 @@ export default function Storico() {
     }
   }
 
+  function applyPreset(type) {
+    const today = dayjs();
+
+    if (type === 'today') {
+      setFrom(today.format('YYYY-MM-DD'));
+      setTo(today.format('YYYY-MM-DD'));
+      return;
+    }
+
+    if (type === 'week') {
+      setFrom(today.subtract(6, 'day').format('YYYY-MM-DD'));
+      setTo(today.format('YYYY-MM-DD'));
+      return;
+    }
+
+    setFrom(today.startOf('month').format('YYYY-MM-DD'));
+    setTo(today.format('YYYY-MM-DD'));
+  }
+
   return (
-    <div className="container pageShell">
-      <section className="pageHero">
-        <div className="pageHeader">
-          <div className="pageHeaderMain">
+    <div className="container pageShell historyPage">
+      <section className="pageHero historyHero">
+        <div className="historyHeroTop">
+          <div>
+            <span className="historyEyebrow">Archivio operativo</span>
             <h1 className="pageTitle">Storico Timesheet</h1>
             <p className="pageSubtitle">
-            {isAdmin
-              ? 'Vista completa di tutti i timesheet aziendali.'
-              : isOffice
-                ? 'Qui vedi solo il tuo storico personale.'
-                : `Vista limitata al reparto ${DEPARTMENT_LABELS[department]?.toLowerCase() || 'assegnato'}.`}
-            <span style={{ display: 'block', marginTop: 4, opacity: 0.8 }}>
-              Clicca su una riga per modificarla.
-            </span>
-          </p>
+              {isAdmin
+                ? 'Consulta l’attività aziendale con una vista chiara, filtrabile e pronta per il controllo.'
+                : isOffice
+                  ? 'Il tuo archivio personale, organizzato per periodo, commessa e lavorazione.'
+                  : `Storico del reparto ${DEPARTMENT_LABELS[department]?.toLowerCase() || 'assegnato'}, con tutti i dettagli operativi.`}
+            </p>
           </div>
-          <span className="badge">Storico</span>
+
+          <div className="historyHeroContext">
+            <span className="historyHeroContextLabel">Vista corrente</span>
+            <strong>{selectedEmployeeName}</strong>
+            <span>{periodLabel}</span>
+          </div>
         </div>
 
-        <div className="pageBody">
-          <div className="card">
-        <div className="row" style={{ alignItems: 'flex-end' }}>
-          <div className="formGroup" style={{ minWidth: 240 }}>
+        <div className="historyMetricGrid">
+          <div className="historyMetricCard historyMetricCard--primary">
+            <div className="historyMetricIcon"><Icon name="clock" /></div>
+            <div>
+              <span>Tempo totale</span>
+              <strong>{fmtMinutes(totalMinutes)}</strong>
+              <small>nel periodo selezionato</small>
+            </div>
+          </div>
+          <div className="historyMetricCard">
+            <div className="historyMetricIcon"><Icon name="list" /></div>
+            <div>
+              <span>Registrazioni</span>
+              <strong>{filteredRows.length}</strong>
+              <small>righe timesheet</small>
+            </div>
+          </div>
+          <div className="historyMetricCard">
+            <div className="historyMetricIcon"><Icon name="calendar" /></div>
+            <div>
+              <span>Giorni lavorati</span>
+              <strong>{uniqueDays}</strong>
+              <small>media {fmtMinutes(averageMinutes)} / giorno</small>
+            </div>
+          </div>
+          <div className="historyMetricCard">
+            <div className="historyMetricIcon"><Icon name="briefcase" /></div>
+            <div>
+              <span>Commesse</span>
+              <strong>{uniqueCommesse}</strong>
+              <small>commesse distinte</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="card historyControlPanel">
+        <div className="historyControlHead">
+          <div>
+            <span className="historySectionEyebrow">Filtri</span>
+            <h2>Trova subito quello che cerchi</h2>
+          </div>
+          <div className="historyQuickRanges" aria-label="Intervalli rapidi">
+            <button type="button" className="historyRangeBtn" onClick={() => applyPreset('today')}>Oggi</button>
+            <button type="button" className="historyRangeBtn" onClick={() => applyPreset('week')}>Ultimi 7 giorni</button>
+            <button type="button" className="historyRangeBtn" onClick={() => applyPreset('month')}>Questo mese</button>
+          </div>
+        </div>
+
+        <div className="historyFiltersGrid">
+          <div className="formGroup historyFilterEmployee">
             <label>
               {isOffice
                 ? 'Il tuo profilo collegato'
@@ -235,7 +368,6 @@ export default function Storico() {
                   ? 'Dipendente associato'
                   : 'Dipendente'}
             </label>
-
             <select
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
@@ -243,9 +375,7 @@ export default function Storico() {
             >
               {!employeeId && <option value="">Tutti</option>}
               {employees.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {x.full_name}
-                </option>
+                <option key={x.id} value={x.id}>{x.full_name}</option>
               ))}
             </select>
           </div>
@@ -260,88 +390,147 @@ export default function Storico() {
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
 
-          <div className="formGroup" style={{ minWidth: 260 }}>
-            <label>Ricerca</label>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="commessa, lavorazione, note..."
-            />
+          <div className="formGroup historySearchField">
+            <label>Ricerca libera</label>
+            <div className="historySearchInput">
+              <Icon name="search" size={17} />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Commessa, lavorazione, note..."
+              />
+            </div>
           </div>
 
-          <button className="btn btnPrimary" onClick={load} disabled={loading}>
-            {loading ? 'Carico...' : isOffice ? 'Aggiorna' : 'Filtra'}
+          <button className="btn btnPrimary historyApplyBtn" onClick={load} disabled={loading}>
+            <Icon name={loading ? 'refresh' : 'filter'} size={17} />
+            {loading ? 'Aggiorno...' : isOffice ? 'Aggiorna' : 'Applica filtri'}
           </button>
-
-          <div className="spacer" />
-          <div className="pill ok">Totale: {fmtMinutes(totalMinutes)}</div>
         </div>
+      </section>
 
-        <hr className="sep" />
+      {err && <div className="toast err historyToast">{err}</div>}
+      {ok && <div className="toast ok historyToast">{ok}</div>}
 
-        {err && <div className="toast err">{err}</div>}
-        {ok && <div className="toast ok">{ok}</div>}
-
-        <div className="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Data</th>
-                {isAdmin && <th>Reparto</th>}
-                {isAdmin && <th>Dipendente</th>}
-                <th>Dalle</th>
-                <th>Alle</th>
-                <th>Totale</th>
-                <th>Commessa</th>
-                <th>Lavorazione</th>
-                <th>Note</th>
-                {isAdmin && <th className="actionsCell">Azioni</th>}
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredRows.map((r) => (
-                <tr
-                  key={r.id}
-                  className="timesheetRowClickable"
-                  onClick={() => setEditRow(r)}
-                  title="Clicca per modificare"
-                >
-                  <td>{r.work_date}</td>
-                  {isAdmin && <td>{DEPARTMENT_LABELS[r.department] || r.department || '—'}</td>}
-                  {isAdmin && <td>{r.employees?.full_name || '—'}</td>}
-                  <td>{String(r.start_time).slice(0, 5)}</td>
-                  <td>{String(r.end_time).slice(0, 5)}</td>
-                  <td>{fmtMinutes(r.minutes || 0)}</td>
-                  <td>{r.cdl?.code ? `${r.cdl.code} — ` : ''}{r.cdl?.name}</td>
-                  <td>{r.lavorazioni?.name}</td>
-                  <td className="note" title={r.note || ''}>{r.note}</td>
-
-                  {isAdmin && (
-                    <td className="actionsCell" onClick={(e) => e.stopPropagation()}>
-                      <button className="btn iconBtn" onClick={() => setEditRow(r)}>
-                        Modifica
-                      </button>
-                      <button className="btn btnDanger iconBtn" onClick={() => onDelete(r)}>
-                        Elimina
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-
-              {!filteredRows.length && !loading && (
-                <tr>
-                  <td colSpan={isAdmin ? 10 : 7} style={{ textAlign: 'center', opacity: 0.7, padding: 18 }}>
-                    Nessun record con questi filtri.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      <section className="card historyResultsPanel">
+        <div className="historyResultsHead">
+          <div>
+            <span className="historySectionEyebrow">Risultati</span>
+            <h2>{filteredRows.length} {filteredRows.length === 1 ? 'registrazione' : 'registrazioni'}</h2>
+            <p>{q ? `Risultati filtrati per “${q}”` : `Periodo ${periodLabel}`}</p>
+          </div>
+          <div className="historyTotalBadge">
+            <span>Totale</span>
+            <strong>{fmtMinutes(totalMinutes)}</strong>
           </div>
         </div>
+
+        {filteredRows.length ? (
+          <>
+            <div className="historyDesktopTable">
+              <div className="tableWrap historyTableWrap">
+                <table className="historyTable">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      {isAdmin && <th>Reparto</th>}
+                      {isAdmin && <th>Dipendente</th>}
+                      <th>Orario</th>
+                      <th>Durata</th>
+                      <th>Commessa</th>
+                      <th>Lavorazione</th>
+                      <th>Note</th>
+                      {isAdmin && <th className="actionsCell">Azioni</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRows.map((r) => {
+                      const dateParts = compactDate(r.work_date);
+                      return (
+                        <tr
+                          key={r.id}
+                          className="timesheetRowClickable historyTableRow"
+                          onClick={() => setEditRow(r)}
+                          title="Clicca per aprire il dettaglio"
+                        >
+                          <td>
+                            <div className="historyDateCell">
+                              <strong>{dateParts.day}</strong>
+                              <span>{dateParts.month}</span>
+                            </div>
+                          </td>
+                          {isAdmin && <td><span className="historyDepartmentTag">{DEPARTMENT_LABELS[r.department] || r.department || '—'}</span></td>}
+                          {isAdmin && <td><strong className="historyEmployeeName">{r.employees?.full_name || '—'}</strong></td>}
+                          <td>
+                            <div className="historyTimeCell">
+                              <span>{String(r.start_time || '').slice(0, 5)}</span>
+                              <span className="historyTimeArrow">→</span>
+                              <span>{String(r.end_time || '').slice(0, 5)}</span>
+                            </div>
+                          </td>
+                          <td><span className="historyDurationBadge">{fmtMinutes(r.minutes || 0)}</span></td>
+                          <td>
+                            <div className="historyJobCell">
+                              {r.cdl?.code && <span>{r.cdl.code}</span>}
+                              <strong>{r.cdl?.name || 'Nessuna commessa'}</strong>
+                            </div>
+                          </td>
+                          <td><span className="historyWorkTag">{r.lavorazioni?.name || '—'}</span></td>
+                          <td><div className="historyNoteCell" title={r.note || ''}>{r.note || '—'}</div></td>
+                          {isAdmin && (
+                            <td className="actionsCell" onClick={(e) => e.stopPropagation()}>
+                              <div className="historyRowActions">
+                                <button className="btn btnSmall historyIconAction" onClick={() => setEditRow(r)} title="Modifica">
+                                  <Icon name="edit" size={16} />
+                                </button>
+                                <button className="btn btnSmall btnDanger historyIconAction" onClick={() => onDelete(r)} title="Elimina">
+                                  <Icon name="trash" size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="historyMobileList">
+              {filteredRows.map((r) => {
+                const dateParts = compactDate(r.work_date);
+                return (
+                  <button key={r.id} type="button" className="historyMobileCard" onClick={() => setEditRow(r)}>
+                    <div className="historyMobileDate">
+                      <strong>{dateParts.day}</strong>
+                      <span>{dateParts.month}</span>
+                    </div>
+                    <div className="historyMobileMain">
+                      <div className="historyMobileTopline">
+                        <strong>{r.cdl?.code ? `${r.cdl.code} · ${r.cdl?.name || ''}` : r.cdl?.name || 'Nessuna commessa'}</strong>
+                        <span>{fmtMinutes(r.minutes || 0)}</span>
+                      </div>
+                      {isAdmin && <div className="historyMobileEmployee">{r.employees?.full_name || '—'} · {DEPARTMENT_LABELS[r.department] || r.department || '—'}</div>}
+                      <div className="historyMobileMeta">
+                        <span>{String(r.start_time || '').slice(0, 5)} → {String(r.end_time || '').slice(0, 5)}</span>
+                        <span>{r.lavorazioni?.name || '—'}</span>
+                      </div>
+                      {r.note && <p>{r.note}</p>}
+                    </div>
+                    <span className="historyMobileChevron"><Icon name="chevron" size={17} /></span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="historyEmptyState">
+            <div className="historyEmptyIcon"><Icon name="search" size={24} /></div>
+            <strong>Nessun timesheet trovato</strong>
+            <p>Prova a cambiare intervallo, dipendente oppure testo di ricerca.</p>
+          </div>
+        )}
       </section>
 
       <TimesheetEditModal

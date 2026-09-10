@@ -213,203 +213,151 @@ export default function Home() {
   }
 
   return (
-    <div className="container pageShell">
-      <section className="pageHero homeCard">
-        <div className="cardHeader">
+    <div className="container pageShell homeWorkspace">
+      <section className="pageHero homeCard homeHeroCompact">
+        <div className="cardHeader homeHeroHeader">
           <div>
-            <h1 className="h1">Timesheet</h1>
+            <span className="dailyReportEyebrow">Idealtech workspace</span>
+            <h1 className="h1">{profile?.display_name ? `Ciao, ${profile.display_name}` : 'Timesheet'}</h1>
             <p className="sub">
-              Ruolo: <b>{roleLabel}</b>
-              {profile?.display_name ? ` — ${profile.display_name}` : ''}
-              {departmentLabel ? ` · ${departmentLabel}` : ''}
+              {isAdmin
+                ? 'Controlla rapidamente attività, compilazioni e operatività aziendale.'
+                : `Area ${departmentLabel?.toLowerCase() || roleLabel?.toLowerCase() || 'personale'} per registrare e consultare il lavoro quotidiano.`}
             </p>
           </div>
+          <div className="homeHeroIdentity">
+            <span>{roleLabel}</span>
+            {departmentLabel && <strong>{departmentLabel}</strong>}
+          </div>
         </div>
 
-        <hr className="sep" />
-
-        <div className="row" style={{ flexWrap: 'wrap', gap: 12 }}>
-          {!isAdmin && (
+        <div className="homeQuickActions">
+          {!isAdmin ? (
             <>
-              <Link className="btn btnPrimary" to={targetCompilePath}>
-                Compila Timesheet
-              </Link>
-              <Link className="btn" to="/storico">
-                {isOffice ? 'Il mio storico' : 'Storico reparto'}
-              </Link>
-              <Link className="btn" to="/interventi">
-                Fogli intervento
-              </Link>
+              <Link className="btn btnPrimary" to={targetCompilePath}>Compila Timesheet</Link>
+              <Link className="btn" to="/storico">{isOffice ? 'Il mio storico' : 'Storico reparto'}</Link>
+              <Link className="btn" to="/interventi">Fogli intervento</Link>
             </>
-          )}
-
-          {isAdmin && (
+          ) : (
             <>
-              <Link className="btn btnPrimary" to="/admin">
-                Apri Dashboard
-              </Link>
-              <Link className="btn" to="/admin/users">
-                Gestisci utenti
-              </Link>
-              <Link className="btn" to="/admin/timesheets">
-                Controlla timesheet
-              </Link>
-              <Link className="btn" to="/storico">
-                Storico reparto
-              </Link>
+              <Link className="btn btnPrimary" to="/admin">Apri Dashboard</Link>
+              <Link className="btn" to="/admin/timesheets">Controlla timesheet</Link>
+              <Link className="btn" to="/admin/commesse">Gestione commesse</Link>
+              <Link className="btn" to="/admin/users">Gestisci utenti</Link>
             </>
           )}
         </div>
+      </section>
 
-        <div className="grid2" style={{ marginTop: 16 }}>
-          <div className="kpi">
-            <div className="label">Timesheet oggi</div>
-            <div className="value">{summary.totalTimesheets}</div>
+      <section className="homeMetricsGrid">
+        <div className="kpi homeMetricCard">
+          <div className="label">Timesheet oggi</div>
+          <div className="value">{summary.totalTimesheets}</div>
+          <div className="homeMetricMeta">registrazioni inserite</div>
+        </div>
+        <div className="kpi homeMetricCard">
+          <div className="label">Tempo registrato</div>
+          <div className="value">{Math.floor(summary.totalMinutes / 60)}h {String(summary.totalMinutes % 60).padStart(2, '0')}m</div>
+          <div className="homeMetricMeta">totale della giornata</div>
+        </div>
+        <div className="kpi homeMetricCard">
+          <div className="label">Persone monitorate</div>
+          <div className="value">{summary.totalEmployees}</div>
+          <div className="homeMetricMeta">profili attivi visibili</div>
+        </div>
+      </section>
+
+      <section className="dailyReport homeDailyReport">
+        <div className="dailyReportHead">
+          <div>
+            <span className="dailyReportEyebrow">Monitoraggio giornaliero</span>
+            <h2 className="dailyReportTitle">
+              {isAdmin
+                ? 'Compilazione timesheet globale'
+                : isOffice
+                  ? 'Compilazione del tuo timesheet'
+                  : `Compilazione timesheet ${departmentLabel?.toLowerCase() || 'reparto'}`}
+            </h2>
+            <p className="dailyReportText">
+              {isAdmin
+                ? 'Controlla chi non ha ancora registrato attività nella giornata di oggi.'
+                : isOffice
+                  ? 'Verifica immediatamente se il tuo timesheet di oggi risulta compilato.'
+                  : 'Visualizza chi deve ancora inserire il timesheet nel tuo reparto.'}
+            </p>
           </div>
-          <div className="kpi">
-            <div className="label">Minuti registrati oggi</div>
-            <div className="value">{summary.totalMinutes}</div>
-          </div>
+
+          {!loadingMissing && !missingError && (
+            <div className={missingEmployees.length > 0 ? 'reportCounter reportCounterAlert' : 'reportCounter reportCounterOk'}>
+              {missingEmployees.length > 0 ? `${missingEmployees.length} mancanti` : 'Tutti compilati'}
+            </div>
+          )}
         </div>
 
-        <section className="dailyReport" style={{ marginTop: 18 }}>
-          <div className="dailyReportHead">
-            <div>
-              <span className="dailyReportEyebrow">Monitoraggio giornaliero</span>
-              <h2 className="dailyReportTitle">
-                {isAdmin
-                  ? 'Compilazione timesheet globale'
-                  : isOffice
-                    ? 'Compilazione del tuo timesheet'
-                    : `Compilazione timesheet ${departmentLabel?.toLowerCase() || 'reparto'}`}
-              </h2>
-              <p className="dailyReportText">
-                {isAdmin
-                  ? 'Qui sotto vedi chi non ha ancora inserito alcun timesheet oggi in tutta l’azienda.'
-                  : isOffice
-                    ? 'Qui sotto vedi se il tuo profilo collegato ha già compilato il timesheet di oggi.'
-                    : 'Qui sotto vedi chi non ha ancora inserito alcun timesheet oggi nel tuo reparto.'}
-              </p>
-            </div>
-
-            {!loadingMissing && !missingError && (
-              <div
-                className={
-                  missingEmployees.length > 0
-                    ? 'reportCounter reportCounterAlert'
-                    : 'reportCounter reportCounterOk'
-                }
-              >
-                {missingEmployees.length > 0
-                  ? `${missingEmployees.length} mancanti`
-                  : 'Tutti compilati'}
-              </div>
-            )}
-          </div>
-
-          {loadingMissing && (
-            <div className="reportState reportStateNeutral">Caricamento resoconto...</div>
-          )}
-
-          {!loadingMissing && missingError && (
-            <div className="reportState reportStateError">{missingError}</div>
-          )}
-
-          {!loadingMissing && !missingError && missingEmployees.length === 0 && (
-            <div className="reportState reportStateSuccess">
-              Tutti i dipendenti visibili hanno già compilato almeno un timesheet oggi.
-            </div>
-          )}
-
-          {!loadingMissing && !missingError && missingEmployees.length > 0 && (
-            <div className="missingEmployeesList">
-              {missingEmployees.map((employee) => (
-                <div key={employee.id} className="missingEmployeeCard">
-                  <div style={{ fontWeight: 700 }}>{employee.full_name}</div>
-                  <div className="sub" style={{ marginTop: 4 }}>
-                    {employee.department
-                      ? DEPARTMENT_LABELS[employee.department] || employee.department
-                      : 'Reparto non assegnato'}
-                  </div>
+        {loadingMissing && <div className="reportState reportStateNeutral">Caricamento resoconto...</div>}
+        {!loadingMissing && missingError && <div className="reportState reportStateError">{missingError}</div>}
+        {!loadingMissing && !missingError && missingEmployees.length === 0 && (
+          <div className="reportState reportStateSuccess">Tutti i dipendenti visibili hanno già compilato almeno un timesheet oggi.</div>
+        )}
+        {!loadingMissing && !missingError && missingEmployees.length > 0 && (
+          <div className="missingEmployeesList">
+            {missingEmployees.map((employee) => (
+              <div key={employee.id} className="missingEmployeeCard">
+                <div style={{ fontWeight: 800 }}>{employee.full_name}</div>
+                <div className="sub" style={{ marginTop: 3 }}>
+                  {employee.department ? DEPARTMENT_LABELS[employee.department] || employee.department : 'Reparto non assegnato'}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <div className="card" style={{ marginTop: 18 }}>
-          <div className="cardHeader">
-            <div>
-              <h2 className="h1" style={{ fontSize: 24 }}>
-                News interne
-              </h2>
-              <p className="sub">Aggiornamenti rapidi visibili a tutti gli utenti dell’app.</p>
-            </div>
-            {isAdmin && <span className="badge">Admin</span>}
-          </div>
-
-          <hr className="sep" />
-
-          {isAdmin && (
-            <form onSubmit={handleCreateNews} className="grid" style={{ marginBottom: 18 }}>
-              <div className="formGroup">
-                <label>Titolo</label>
-                <input
-                  value={newsTitle}
-                  onChange={(e) => setNewsTitle(e.target.value)}
-                  placeholder="Nuovo aggiornamento"
-                />
-              </div>
-
-              <div className="formGroup">
-                <label>Contenuto</label>
-                <textarea
-                  value={newsContent}
-                  onChange={(e) => setNewsContent(e.target.value)}
-                  placeholder="Scrivi il messaggio da mostrare in home..."
-                />
-              </div>
-
-              <div className="row">
-                <button type="submit" className="btn btnPrimary" disabled={savingNews}>
-                  {savingNews ? 'Pubblico...' : 'Pubblica news'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {newsError && <div className="toast err">{newsError}</div>}
-          {loadingNews && <div className="sub">Caricamento news...</div>}
-          {!loadingNews && !newsItems.length && (
-            <div className="sub">Nessuna news pubblicata.</div>
-          )}
-
-          <div className="newsList">
-            {newsItems.map((item) => (
-              <div key={item.id} className="newsItem">
-                <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
-                  <div style={{ fontWeight: 700 }}>{item.title}</div>
-                  <span className="sub">{formatDate(item.created_at)}</span>
-                </div>
-
-                <div className="sub" style={{ marginTop: 10, whiteSpace: 'pre-wrap' }}>
-                  {item.content}
-                </div>
-
-                {isAdmin && (
-                  <div className="row" style={{ marginTop: 12 }}>
-                    <button
-                      type="button"
-                      className="btn btnDanger"
-                      onClick={() => handleDeleteNews(item.id)}
-                    >
-                      Elimina
-                    </button>
-                  </div>
-                )}
               </div>
             ))}
           </div>
+        )}
+      </section>
+
+      <section className="card homeNewsCard">
+        <div className="cardHeader">
+          <div>
+            <span className="dailyReportEyebrow">Comunicazioni</span>
+            <h2 className="homeSectionTitle">News interne</h2>
+            <p className="sub">Aggiornamenti rapidi visibili a tutti gli utenti dell’app.</p>
+          </div>
+          {isAdmin && <span className="badge">Admin</span>}
+        </div>
+
+        {isAdmin && (
+          <form onSubmit={handleCreateNews} className="homeNewsComposer">
+            <div className="formGroup">
+              <label>Titolo</label>
+              <input value={newsTitle} onChange={(e) => setNewsTitle(e.target.value)} placeholder="Nuovo aggiornamento" />
+            </div>
+            <div className="formGroup">
+              <label>Contenuto</label>
+              <textarea value={newsContent} onChange={(e) => setNewsContent(e.target.value)} placeholder="Scrivi il messaggio da mostrare in home..." />
+            </div>
+            <div className="row">
+              <button type="submit" className="btn btnPrimary" disabled={savingNews}>{savingNews ? 'Pubblico...' : 'Pubblica news'}</button>
+            </div>
+          </form>
+        )}
+
+        {newsError && <div className="toast err">{newsError}</div>}
+        {loadingNews && <div className="sub">Caricamento news...</div>}
+        {!loadingNews && !newsItems.length && <div className="reportState reportStateNeutral">Nessuna news pubblicata.</div>}
+
+        <div className="newsList homeNewsList">
+          {newsItems.map((item) => (
+            <article key={item.id} className="newsItem homeNewsItem">
+              <div className="newsItemHead">
+                <div className="homeNewsTitle">{item.title}</div>
+                <span className="sub">{formatDate(item.created_at)}</span>
+              </div>
+              <div className="sub homeNewsContent">{item.content}</div>
+              {isAdmin && (
+                <div className="row homeNewsActions">
+                  <button type="button" className="btn btnDanger btnSmall" onClick={() => handleDeleteNews(item.id)}>Elimina</button>
+                </div>
+              )}
+            </article>
+          ))}
         </div>
       </section>
     </div>
