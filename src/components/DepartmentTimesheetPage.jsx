@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { supabase } from '../lib/supabase';
 import { insertTimesheet } from '../lib/api';
 import { DEPARTMENT_LABELS, normalizeDepartment } from '../lib/access';
+import CdlPicker from './CdlPicker';
 
 function minutesDiff(start, end) {
   if (!start || !end) return 0;
@@ -136,7 +137,7 @@ export default function DepartmentTimesheetPage({ department }) {
 
         const [employeesRes, cdlRes, lavorazioniRes] = await Promise.all([
           employeesQuery,
-          supabase.from('cdl').select('id, code, name').eq('is_active', true).order('code', { ascending: true }).order('name', { ascending: true }),
+          supabase.from('cdl').select('id, code, name, client').eq('is_active', true).order('code', { ascending: true }).order('name', { ascending: true }),
           supabase.from('lavorazioni').select('id, name').eq('is_active', true).order('name', { ascending: true }),
         ]);
 
@@ -191,36 +192,40 @@ export default function DepartmentTimesheetPage({ department }) {
     }
   }, [employeeId, isOffice, linkedEmployeeId]);
 
+  const refreshCdlOptions = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('cdl')
+      .select('id, code, name, client')
+      .eq('is_active', true)
+      .order('code', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+
+    const nextRows = data || [];
+    setCdl(nextRows);
+    setCdlId((currentId) => {
+      if (currentId && nextRows.some((item) => String(item.id) === String(currentId))) {
+        return currentId;
+      }
+      return nextRows[0] ? String(nextRows[0].id) : '';
+    });
+
+    return nextRows;
+  }, []);
+
   // Mantiene il menu commesse sempre allineato con la scansione del file server.
-  // Quando l'admin preme "Scansiona ora", il server aggiorna la tabella CDL e
-  // gli utenti vedono le nuove commesse senza dover ricaricare manualmente l'app.
+  // Il menu si aggiorna appena viene aperto, ogni 5 secondi, al ritorno sull'app
+  // e tramite Realtime quando Supabase lo rende disponibile.
   useEffect(() => {
     let active = true;
     let refreshing = false;
 
-    const refreshCdlOptions = async () => {
-      if (refreshing) return;
+    const refresh = async () => {
+      if (refreshing || !active) return;
       refreshing = true;
-
       try {
-        const { data, error } = await supabase
-          .from('cdl')
-          .select('id, code, name')
-          .eq('is_active', true)
-          .order('code', { ascending: true })
-          .order('name', { ascending: true });
-
-        if (error) throw error;
-        if (!active) return;
-
-        const nextRows = data || [];
-        setCdl(nextRows);
-        setCdlId((currentId) => {
-          if (currentId && nextRows.some((item) => String(item.id) === String(currentId))) {
-            return currentId;
-          }
-          return nextRows[0] ? String(nextRows[0].id) : '';
-        });
+        await refreshCdlOptions();
       } catch (refreshError) {
         console.error('Aggiornamento automatico commesse fallito:', refreshError);
       } finally {
@@ -228,26 +233,24 @@ export default function DepartmentTimesheetPage({ department }) {
       }
     };
 
-    // Aggiornamento periodico: leggero (solo anagrafica CDL) e indipendente da Realtime.
-    const intervalId = window.setInterval(refreshCdlOptions, 10000);
+    // 5 secondi: la scansione manuale dell'admin si riflette molto rapidamente
+    // sui menu degli utenti senza costringerli a ricaricare la pagina.
+    const intervalId = window.setInterval(refresh, 5000);
 
-    // Aggiorna immediatamente quando l'utente torna sull'app/tab.
-    const handleFocus = () => refreshCdlOptions();
+    const handleFocus = () => refresh();
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') refreshCdlOptions();
+      if (document.visibilityState === 'visible') refresh();
     };
 
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // Se Realtime e' abilitato sulla tabella CDL, l'aggiornamento diventa istantaneo.
-    // Il polling sopra resta come fallback e non richiede configurazioni Supabase aggiuntive.
     const channel = supabase
       .channel(`cdl-timesheet-${normalizedDepartment || 'all'}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'cdl' },
-        () => refreshCdlOptions(),
+        () => refresh(),
       )
       .subscribe();
 
@@ -258,7 +261,7 @@ export default function DepartmentTimesheetPage({ department }) {
       document.removeEventListener('visibilitychange', handleVisibility);
       supabase.removeChannel(channel);
     };
-  }, [normalizedDepartment]);
+  }, [normalizedDepartment, refreshCdlOptions]);
 
   async function onSave(event) {
     event.preventDefault();
@@ -360,13 +363,15 @@ export default function DepartmentTimesheetPage({ department }) {
                 </select>
               </div>
 
-              <div className="formGroup">
+              <div className="formGroup cdlPickerFormGroup">
                 <label>Commessa / CDL</label>
-                <select value={cdlId} onChange={(event) => setCdlId(event.target.value)}>
-                  {cdl.map((item) => (
-                    <option key={item.id} value={item.id}>{item.code ? `${item.code} — ` : ''}{item.name}</option>
-                  ))}
-                </select>
+                <CdlPicker
+                  value={cdlId}
+                  items={cdl}
+                  onChange={setCdlId}
+                  onRefresh={refreshCdlOptions}
+                  disabled={loadingLists}
+                />
               </div>
 
               <div className="formGroup">

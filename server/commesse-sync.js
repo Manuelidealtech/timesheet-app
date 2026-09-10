@@ -286,8 +286,11 @@ async function syncCdlFromCommessaFolders(commessaFolders) {
     let matched = findMatchingCdl(folderName, parsed, cdlRows);
 
     if (!matched) {
+      // Le revisioni usano 0000 solo come prefisso della cartella sul file server.
+      // In CDL salviamo il codice a NULL: PostgreSQL consente piu NULL anche con
+      // un vincolo UNIQUE sul codice, quindi revisioni diverse restano sempre distinte.
       const payload = {
-        code: parsed.code,
+        code: isPlaceholderCommessaCode(parsed.code) ? null : parsed.code,
         name: parsed.name,
         client: parsed.client,
         is_active: true,
@@ -314,9 +317,16 @@ async function syncCdlFromCommessaFolders(commessaFolders) {
       patch.is_active = true;
     }
 
+    // 0000 e' solo un marcatore delle cartelle di revisione. Se una revisione
+    // era gia stata sincronizzata con 0000, la normalizziamo a NULL cosi il
+    // codice non puo impedire la creazione delle altre revisioni.
+    if (isPlaceholderCommessaCode(parsed.code) && isPlaceholderCommessaCode(matched.code)) {
+      patch.code = null;
+    }
+
     // Completa solo eventuali dati mancanti senza sovrascrivere descrizioni
     // che potrebbero essere state personalizzate manualmente in anagrafica.
-    if (!String(matched.code || '').trim() && parsed.code) {
+    if (!isPlaceholderCommessaCode(parsed.code) && !String(matched.code || '').trim() && parsed.code) {
       patch.code = parsed.code;
     }
     if (!String(matched.name || '').trim() && parsed.name) {
@@ -347,8 +357,9 @@ async function syncCdlFromCommessaFolders(commessaFolders) {
     }
   }
 
-  if (inserted || reactivated || enriched) {
-    console.log(`  Sincronizzazione CDL: ${inserted} create, ${reactivated} riattivate, ${enriched} completate.`);
+  const revisionFolders = commessaFolders.filter((folderName) => isPlaceholderCommessaCode(parseCommessaFolder(folderName).code)).length;
+  if (inserted || reactivated || enriched || revisionFolders) {
+    console.log(`  Sincronizzazione CDL: ${inserted} create, ${reactivated} riattivate, ${enriched} completate, ${revisionFolders} revisioni rilevate.`);
   }
 
   return cdlRows;

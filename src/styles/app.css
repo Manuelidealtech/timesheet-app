@@ -1366,3 +1366,268 @@ tbody tr:hover,
 }
 .loginBrandMark { padding: 0; overflow: hidden; background: transparent; border-color: rgba(255,255,255,.22); }
 .loginBrandMark img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+/* Commessa picker — searchable, touch friendly, synced with file server */
+.cdlPickerFormGroup { min-width: 0; }
+.cdlPicker { position: relative; min-width: 0; z-index: 15; }
+.cdlPicker.isOpen { z-index: 80; }
+.cdlPickerTrigger {
+  width: 100%;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .18s ease;
+}
+.cdlPickerTrigger:hover {
+  border-color: color-mix(in srgb,var(--role-accent) 38%,var(--stroke));
+  background: color-mix(in srgb,var(--role-accent) 3%,var(--panel));
+}
+.cdlPicker.isOpen .cdlPickerTrigger {
+  border-color: color-mix(in srgb,var(--role-accent) 72%,var(--stroke));
+  box-shadow: 0 0 0 3px color-mix(in srgb,var(--role-accent) 12%,transparent);
+}
+.cdlPickerTrigger:disabled { opacity: .64; cursor: wait; }
+.cdlPickerTriggerText,.cdlPickerOptionText { min-width: 0; display: grid; gap: 2px; }
+.cdlPickerTriggerText strong,.cdlPickerOptionText strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--text);
+}
+.cdlPickerTriggerText small,.cdlPickerOptionText small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.25;
+}
+.cdlPickerCode {
+  min-width: 48px;
+  height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb,var(--role-accent) 22%,var(--stroke));
+  border-radius: 8px;
+  background: color-mix(in srgb,var(--role-accent) 8%,var(--panel-soft));
+  color: var(--role-accent);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .04em;
+  flex: 0 0 auto;
+}
+.cdlPickerCode.isRevision {
+  border-color: color-mix(in srgb,#f59e0b 30%,var(--stroke));
+  background: color-mix(in srgb,#f59e0b 10%,var(--panel));
+  color: #b66a00;
+}
+[data-theme="dark"] .cdlPickerCode.isRevision { color: #ffc15a; }
+.cdlPickerPlaceholder { color: var(--muted); font-size: 12px; padding-left: 2px; }
+.cdlPickerChevron {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 17px;
+  transition: transform .18s ease, background .18s ease;
+}
+.cdlPicker.isOpen .cdlPickerChevron { transform: rotate(180deg); background: var(--panel-soft); }
+.cdlPickerMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(560px, calc(100vw - 32px));
+  min-width: 100%;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb,var(--role-accent) 18%,var(--stroke));
+  border-radius: 16px;
+  background: color-mix(in srgb,var(--panel) 96%,transparent);
+  box-shadow: 0 22px 60px rgba(22,31,61,.18), 0 5px 18px rgba(22,31,61,.08);
+  backdrop-filter: blur(16px);
+}
+.cdlPickerMenuHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px 10px;
+  border-bottom: 1px solid var(--stroke);
+}
+.cdlPickerMenuHead > div { min-width: 0; display: grid; gap: 2px; }
+.cdlPickerMenuHead strong { font-size: 13px; color: var(--text); }
+.cdlPickerMenuHead small { color: var(--muted); font-size: 9.5px; }
+.cdlPickerRefresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--stroke);
+  border-radius: 9px;
+  background: var(--panel-soft);
+  color: var(--text-soft);
+  font-size: 9.5px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.cdlPickerRefresh:hover { border-color: color-mix(in srgb,var(--role-accent) 35%,var(--stroke)); color: var(--role-accent); }
+.cdlPickerRefresh .isSpinning { display: inline-block; animation: cdlSpin .7s linear infinite; }
+@keyframes cdlSpin { to { transform: rotate(360deg); } }
+.cdlPickerSearchWrap {
+  margin: 10px 12px;
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--stroke);
+  border-radius: 11px;
+  background: var(--panel-soft);
+  color: var(--muted);
+}
+.cdlPickerSearchWrap:focus-within {
+  border-color: color-mix(in srgb,var(--role-accent) 55%,var(--stroke));
+  box-shadow: 0 0 0 3px color-mix(in srgb,var(--role-accent) 8%,transparent);
+}
+.cdlPickerSearchWrap input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--text);
+  font-size: 11px;
+}
+.cdlPickerSearchWrap button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+}
+.cdlPickerScroll { max-height: 390px; overflow: auto; padding: 0 8px 9px; scrollbar-width: thin; }
+.cdlPickerGroup + .cdlPickerGroup { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--stroke); }
+.cdlPickerGroupTitle {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 6px 5px;
+  background: color-mix(in srgb,var(--panel) 94%,transparent);
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.cdlPickerGroupTitle b {
+  min-width: 22px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--panel-soft);
+  color: var(--text-soft);
+  font-size: 8.5px;
+}
+.cdlPickerOption {
+  width: 100%;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) 24px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background .14s ease, border-color .14s ease, transform .14s ease;
+}
+.cdlPickerOption:hover {
+  background: color-mix(in srgb,var(--role-accent) 5%,var(--panel-soft));
+  border-color: color-mix(in srgb,var(--role-accent) 12%,var(--stroke));
+}
+.cdlPickerOption.isSelected {
+  background: color-mix(in srgb,var(--role-accent) 8%,var(--panel-soft));
+  border-color: color-mix(in srgb,var(--role-accent) 22%,var(--stroke));
+}
+.cdlPickerCheck {
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--role-accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 950;
+}
+.cdlPickerEmpty { display: grid; gap: 4px; padding: 24px 18px 28px; text-align: center; }
+.cdlPickerEmpty strong { color: var(--text); font-size: 12px; }
+.cdlPickerEmpty span { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.cdlPickerMobileBackdrop { display: none; }
+
+@media (max-width: 620px) {
+  .cdlPicker.isOpen { z-index: 300; }
+  .cdlPickerMobileBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 298;
+    background: rgba(13,20,38,.38);
+    backdrop-filter: blur(3px);
+  }
+  .cdlPickerMenu {
+    position: fixed;
+    z-index: 299;
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: 10px;
+    width: auto;
+    min-width: 0;
+    max-height: min(76vh,650px);
+    border-radius: 20px;
+    box-shadow: 0 24px 70px rgba(8,15,32,.34);
+  }
+  .cdlPickerMenuHead { padding: 15px 15px 11px; }
+  .cdlPickerMenuHead strong { font-size: 15px; }
+  .cdlPickerMenuHead small { font-size: 10px; }
+  .cdlPickerSearchWrap { min-height: 44px; margin: 10px 12px; }
+  .cdlPickerSearchWrap input { font-size: 13px; }
+  .cdlPickerScroll { max-height: calc(76vh - 132px); padding-bottom: 14px; }
+  .cdlPickerOption { min-height: 58px; padding: 9px 8px; }
+  .cdlPickerTrigger { min-height: 54px; }
+  .cdlPickerTriggerText strong,.cdlPickerOptionText strong { font-size: 13px; }
+  .cdlPickerTriggerText small,.cdlPickerOptionText small { font-size: 10.5px; }
+  .cdlPickerCode { min-width: 52px; height: 31px; font-size: 10px; }
+}
