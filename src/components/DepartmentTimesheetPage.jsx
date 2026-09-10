@@ -22,6 +22,14 @@ function fmtMinutes(m) {
   return `${h}h ${String(mm).padStart(2, '0')}m`;
 }
 
+function formatCdlLabel(item) {
+  if (!item) return '—';
+  const code = String(item?.code || '').trim();
+  const revision = /^revisione\b/i.test(String(item?.name || '').trim()) || code === '0000' || /^REV-/i.test(code);
+  const displayCode = revision ? 'REV' : code;
+  return `${displayCode ? `${displayCode} — ` : ''}${item?.name || ''}`.trim();
+}
+
 export default function DepartmentTimesheetPage({ department }) {
   const { role, profile } = useAuth();
 
@@ -438,7 +446,7 @@ export default function DepartmentTimesheetPage({ department }) {
                     <time>{item.work_date}</time>
                   </div>
                   <strong className="recentEntryTime">{String(item.start_time).slice(0, 5)} → {String(item.end_time).slice(0, 5)}</strong>
-                  <div className="recentEntryMeta"><span>CDL</span><b>{item.cdl?.code ? `${item.cdl.code} — ` : ''}{item.cdl?.name}</b></div>
+                  <div className="recentEntryMeta"><span>CDL</span><b>{formatCdlLabel(item.cdl)}</b></div>
                   <div className="recentEntryMeta"><span>Lav.</span><b>{item.lavorazioni?.name}</b></div>
                   {item.note && <p className="recentEntryNote">{item.note}</p>}
                 </article>

@@ -1631,3 +1631,26 @@ tbody tr:hover,
   .cdlPickerTriggerText small,.cdlPickerOptionText small { font-size: 10.5px; }
   .cdlPickerCode { min-width: 52px; height: 31px; font-size: 10px; }
 }
+
+/* CDL picker refinements: revisioni + filtro archivio */
+.cdlPickerAllGroup { margin-bottom: 7px; padding-bottom: 7px; border-bottom: 1px solid var(--stroke); }
+.cdlPickerCodeAll {
+  border-color: color-mix(in srgb,var(--muted) 25%,var(--stroke));
+  background: var(--panel-soft);
+  color: var(--text-soft);
+}
+.adminCdlFilterGroup { position: relative; z-index: 35; }
+.adminCdlFilterGroup:has(.cdlPicker.isOpen) { z-index: 120; }
+.adminCdlFilterGroup .cdlPickerTrigger { min-height: 46px; }
+.adminCdlFilterGroup .cdlPickerMenu { width: min(620px, calc(100vw - 32px)); }
+.cdlPickerGroup:first-of-type .cdlPickerGroupTitle { border-radius: 8px; }
+
+@media (max-width: 720px) {
+  .cdlPickerMenuHead { padding: 14px 14px 11px; }
+  .cdlPickerMenuHead strong { font-size: 14px; }
+  .cdlPickerMenuHead small { font-size: 10px; }
+  .cdlPickerScroll { max-height: min(56vh, 470px); }
+  .cdlPickerOption { min-height: 56px; padding: 9px; border-radius: 13px; }
+  .cdlPickerTriggerText strong,.cdlPickerOptionText strong { font-size: 12.5px; }
+  .cdlPickerCode { min-width: 52px; height: 30px; border-radius: 9px; }
+}

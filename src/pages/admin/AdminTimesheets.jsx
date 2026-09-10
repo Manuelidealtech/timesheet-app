@@ -5,6 +5,7 @@ import autoTable from "jspdf-autotable";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { DEPARTMENT_LABELS } from "../../lib/access";
+import CdlPicker from "../../components/CdlPicker";
 
 function fmtMinutes(m) {
   const h = Math.floor(m / 60);
@@ -42,9 +43,15 @@ function formatTime(value) {
   return String(value).slice(0, 5);
 }
 
+function isRevisionCdl(item) {
+  const code = String(item?.code || "").trim();
+  return /^revisione\b/i.test(String(item?.name || "").trim()) || code === "0000" || /^REV-/i.test(code);
+}
+
 function getCdlLabel(item) {
   if (!item) return "-";
-  return `${item.code ? `${item.code} - ` : ""}${safeText(item.name)}`;
+  const code = isRevisionCdl(item) ? "REV" : String(item.code || "").trim();
+  return `${code ? `${code} - ` : ""}${safeText(item.name)}`;
 }
 
 function getSelectedLabel(items, selectedId, fallback, formatter) {
@@ -162,7 +169,7 @@ export default function AdminTimesheets() {
 
       supabase
         .from("cdl")
-        .select("id, code, name")
+        .select("id, code, name, client")
         .eq("is_active", true)
         .order("code", { ascending: true })
         .order("name", { ascending: true }),
@@ -181,6 +188,18 @@ export default function AdminTimesheets() {
     setEmployees(e.data || []);
     setCdl(c.data || []);
     setLavorazioni(l.data || []);
+  }
+
+  async function refreshCdlOptions() {
+    const { data, error } = await supabase
+      .from("cdl")
+      .select("id, code, name, client")
+      .eq("is_active", true)
+      .order("code", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) throw error;
+    setCdl(data || []);
+    return data || [];
   }
 
   async function load() {
@@ -713,17 +732,16 @@ export default function AdminTimesheets() {
             </select>
           </div>
 
-          <div className="formGroup" style={{ minWidth: 260 }}>
+          <div className="formGroup adminCdlFilterGroup" style={{ minWidth: 280 }}>
             <label>Commessa (CDL)</label>
-            <select value={cdlId} onChange={(e) => setCdlId(e.target.value)}>
-              <option value="">Tutte</option>
-              {cdl.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {(x.code ? `${x.code} — ` : "")}
-                  {x.name}
-                </option>
-              ))}
-            </select>
+            <CdlPicker
+              value={cdlId}
+              items={cdl}
+              onChange={setCdlId}
+              onRefresh={refreshCdlOptions}
+              allowEmpty
+              emptyLabel="Tutte le commesse"
+            />
           </div>
 
           <div className="formGroup" style={{ minWidth: 220 }}>
@@ -816,8 +834,7 @@ export default function AdminTimesheets() {
                   <td>{String(r.end_time).slice(0, 5)}</td>
                   <td>{fmtMinutes(r.minutes || 0)}</td>
                   <td>
-                    {(r.cdl?.code ? `${r.cdl.code} — ` : "")}
-                    {r.cdl?.name}
+                    {getCdlLabel(r.cdl)}
                   </td>
                   <td>{r.lavorazioni?.name}</td>
                   <td className="note" title={r.note || ""}>
@@ -936,8 +953,7 @@ export default function AdminTimesheets() {
                     <option value="">Nessuna commessa</option>
                     {cdl.map((x) => (
                       <option key={x.id} value={x.id}>
-                        {(x.code ? `${x.code} — ` : "")}
-                        {x.name}
+                        {getCdlLabel(x)}
                       </option>
                     ))}
                   </select>

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
@@ -121,6 +122,21 @@ function parseCommessaFolder(folderName) {
 
 function isPlaceholderCommessaCode(code) {
   return normalize(code) === '0000';
+}
+
+function revisionInternalCode(folderName) {
+  const hash = createHash('md5')
+    .update(normalize(folderName))
+    .digest('hex')
+    .slice(0, 8)
+    .toUpperCase();
+  return `REV-${hash}`;
+}
+
+function isRevisionCdlRow(row) {
+  const code = String(row?.code || '').trim();
+  const name = String(row?.name || '').trim();
+  return /^revisione\b/i.test(name) || code === '0000' || /^REV-/i.test(code);
 }
 
 function findMatchingCdl(folderName, parsed, cdlRows) {
@@ -286,11 +302,12 @@ async function syncCdlFromCommessaFolders(commessaFolders) {
     let matched = findMatchingCdl(folderName, parsed, cdlRows);
 
     if (!matched) {
-      // Le revisioni usano 0000 solo come prefisso della cartella sul file server.
-      // In CDL salviamo il codice a NULL: PostgreSQL consente piu NULL anche con
-      // un vincolo UNIQUE sul codice, quindi revisioni diverse restano sempre distinte.
+      // Le revisioni usano 0000 solo come prefisso sul file server.
+      // In CDL assegniamo un codice tecnico univoco e stabile (REV-XXXXXXXX):
+      // evita qualunque conflitto UNIQUE/NOT NULL su cdl.code e permette di
+      // avere un numero illimitato di revisioni senza numero commessa reale.
       const payload = {
-        code: isPlaceholderCommessaCode(parsed.code) ? null : parsed.code,
+        code: isPlaceholderCommessaCode(parsed.code) ? revisionInternalCode(folderName) : parsed.code,
         name: parsed.name,
         client: parsed.client,
         is_active: true,
@@ -317,11 +334,13 @@ async function syncCdlFromCommessaFolders(commessaFolders) {
       patch.is_active = true;
     }
 
-    // 0000 e' solo un marcatore delle cartelle di revisione. Se una revisione
-    // era gia stata sincronizzata con 0000, la normalizziamo a NULL cosi il
-    // codice non puo impedire la creazione delle altre revisioni.
-    if (isPlaceholderCommessaCode(parsed.code) && isPlaceholderCommessaCode(matched.code)) {
-      patch.code = null;
+    // Se e' una revisione, normalizziamo sempre il codice tecnico in modo
+    // deterministico. Questo ripara automaticamente vecchi record con 0000 o NULL.
+    if (isPlaceholderCommessaCode(parsed.code)) {
+      const expectedRevisionCode = revisionInternalCode(folderName);
+      if (String(matched.code || '').trim() !== expectedRevisionCode) {
+        patch.code = expectedRevisionCode;
+      }
     }
 
     // Completa solo eventuali dati mancanti senza sovrascrivere descrizioni
@@ -358,11 +377,20 @@ async function syncCdlFromCommessaFolders(commessaFolders) {
   }
 
   const revisionFolders = commessaFolders.filter((folderName) => isPlaceholderCommessaCode(parseCommessaFolder(folderName).code)).length;
+
+  // Rilettura finale dal database: la lista usata da Gestione Commesse e quella
+  // resa disponibile ai Timesheet derivano esattamente dallo stesso stato persistito.
+  const persistedRows = await getCdlRows();
+  const persistedRevisions = persistedRows.filter(isRevisionCdlRow);
+
   if (inserted || reactivated || enriched || revisionFolders) {
-    console.log(`  Sincronizzazione CDL: ${inserted} create, ${reactivated} riattivate, ${enriched} completate, ${revisionFolders} revisioni rilevate.`);
+    console.log(`  Sincronizzazione CDL: ${inserted} create, ${reactivated} riattivate, ${enriched} aggiornate, ${revisionFolders} revisioni cartella, ${persistedRevisions.length} revisioni disponibili nei Timesheet.`);
+    for (const row of persistedRevisions) {
+      console.log(`    REV -> id=${row.id} | ${row.code || 'senza codice'} | ${row.name}`);
+    }
   }
 
-  return cdlRows;
+  return persistedRows;
 }
 
 async function upsertCommessaStatus(folderName, cdlRows) {

@@ -9,7 +9,8 @@ function normalize(value) {
 }
 
 function isRevision(item) {
-  return /^revisione\b/i.test(String(item?.name || '').trim()) || String(item?.code || '').trim() === '0000';
+  const code = String(item?.code || '').trim();
+  return /^revisione\b/i.test(String(item?.name || '').trim()) || code === '0000' || /^REV-/i.test(code);
 }
 
 function displayCode(item) {
@@ -17,7 +18,15 @@ function displayCode(item) {
   return String(item?.code || '').trim() || 'S/C';
 }
 
-export default function CdlPicker({ value, items = [], onChange, onRefresh, disabled = false }) {
+export default function CdlPicker({
+  value,
+  items = [],
+  onChange,
+  onRefresh,
+  disabled = false,
+  allowEmpty = false,
+  emptyLabel = 'Tutte le commesse',
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -95,7 +104,7 @@ export default function CdlPicker({ value, items = [], onChange, onRefresh, disa
   }
 
   function choose(item) {
-    onChange?.(String(item.id));
+    onChange?.(item ? String(item.id) : '');
     setOpen(false);
     setQuery('');
   }
@@ -140,7 +149,7 @@ export default function CdlPicker({ value, items = [], onChange, onRefresh, disa
             </span>
           </>
         ) : (
-          <span className="cdlPickerPlaceholder">Seleziona una commessa</span>
+          <span className="cdlPickerPlaceholder">{allowEmpty ? emptyLabel : 'Seleziona una commessa'}</span>
         )}
         <span className="cdlPickerChevron" aria-hidden="true">⌄</span>
       </button>
@@ -175,6 +184,23 @@ export default function CdlPicker({ value, items = [], onChange, onRefresh, disa
             </div>
 
             <div className="cdlPickerScroll">
+              {allowEmpty && !query && (
+                <section className="cdlPickerGroup cdlPickerAllGroup">
+                  <button
+                    type="button"
+                    className={`cdlPickerOption${!value ? ' isSelected' : ''}`}
+                    onClick={() => choose(null)}
+                  >
+                    <span className="cdlPickerCode cdlPickerCodeAll">ALL</span>
+                    <span className="cdlPickerOptionText">
+                      <strong>{emptyLabel}</strong>
+                      <small>Nessun filtro sulla commessa</small>
+                    </span>
+                    {!value && <span className="cdlPickerCheck" aria-hidden="true">✓</span>}
+                  </button>
+                </section>
+              )}
+
               {revisions.length > 0 && (
                 <section className="cdlPickerGroup">
                   <div className="cdlPickerGroupTitle">
