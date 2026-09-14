@@ -477,7 +477,28 @@
   background: color-mix(in srgb,var(--panel-strong) 92%,var(--panel-soft));
 }
 .interventionStepFooter > span { color: var(--muted); font-size: 10.5px; }
-.interventionStepNext { min-width: 170px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.interventionStepNext {
+  min-width: 170px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+/* Fallback volutamente senza color-mix(): alcuni tablet/WebView meno recenti
+   scartano il gradient avanzato e lasciavano testo bianco su sfondo bianco. */
+.interventionStepNext.btnPrimary {
+  border-color: var(--role-accent, #1677ff) !important;
+  background-color: var(--role-accent, #1677ff) !important;
+  background-image: linear-gradient(135deg,var(--role-accent, #1677ff),var(--role-accent-2, #15b8a6)) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,.12);
+}
+.interventionStepNext.btnPrimary:hover,
+.interventionStepNext.btnPrimary:focus-visible {
+  background-color: var(--role-accent, #1677ff) !important;
+  color: #fff !important;
+}
+
 .interventionStepBack { min-width: 105px; }
 .interventionStepFooter--final > span { margin-left: auto; text-align: right; }
 

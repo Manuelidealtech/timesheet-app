@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { getRoleHomePath } from '../lib/access';
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, user, role, sessionLoading, profileLoading } = useAuth();
   const nav = useNavigate();
+  const location = useLocation();
+
+  const requestedPath = location.state?.from || null;
+
+  useEffect(() => {
+    if (!sessionLoading && !profileLoading && user && role) {
+      nav(requestedPath || getRoleHomePath(role), { replace: true });
+    }
+  }, [sessionLoading, profileLoading, user, role, requestedPath, nav]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +28,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signIn(email, password);
-      nav('/', { replace: true });
+      nav(requestedPath || '/', { replace: true });
     } catch (e2) {
       setErr(e2?.message || 'Errore login');
     } finally {

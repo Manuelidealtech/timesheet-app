@@ -1,10 +1,11 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { getRoleHomePath } from '../lib/access';
 
 export default function RequireRole({ allow, children }) {
   const { sessionLoading, profileLoading, user, role, profile } = useAuth();
+  const location = useLocation();
 
   if (sessionLoading || (profileLoading && !profile)) {
     return (
@@ -15,11 +16,17 @@ export default function RequireRole({ allow, children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   if (!profile || !role) {
-    return <Navigate to="/login" replace />;
+    // L'utente è autenticato: un profilo momentaneamente non disponibile non
+    // deve farlo rimbalzare al login durante un refresh o su una rete lenta.
+    return (
+      <div className="container">
+        <div className="card">Caricamento profilo in corso…</div>
+      </div>
+    );
   }
 
   if (profile?.is_active === false) {

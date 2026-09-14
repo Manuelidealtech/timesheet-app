@@ -10,13 +10,14 @@ function readCachedProfile(userId = null) {
   const cachedDepartment = localStorage.getItem('ts_department');
   const cachedEmployeeId = localStorage.getItem('ts_employee_id');
   const cachedIsActive = localStorage.getItem('ts_is_active');
+  const cachedUserId = localStorage.getItem('ts_user_id');
 
   if (!(cachedRole || cachedName || cachedDepartment || cachedEmployeeId)) {
     return null;
   }
 
   return {
-    user_id: userId,
+    user_id: userId || cachedUserId || null,
     role: cachedRole || null,
     display_name: cachedName || null,
     department: normalizeDepartment(cachedDepartment),
@@ -35,6 +36,7 @@ function persistProfile(profile, userId = null) {
       }
     : null;
 
+  localStorage.setItem('ts_user_id', normalizedProfile?.user_id || userId || '');
   localStorage.setItem('ts_role', normalizedProfile?.role || '');
   localStorage.setItem('ts_display_name', normalizedProfile?.display_name || '');
   localStorage.setItem('ts_department', normalizedProfile?.department || '');
@@ -51,6 +53,7 @@ function persistProfile(profile, userId = null) {
 }
 
 function clearCachedProfile() {
+  localStorage.removeItem('ts_user_id');
   localStorage.removeItem('ts_role');
   localStorage.removeItem('ts_display_name');
   localStorage.removeItem('ts_department');
@@ -94,7 +97,7 @@ export function AuthProvider({ children }) {
           .select('user_id, role, display_name, department, employee_id, is_active, email')
           .eq('user_id', userId)
           .maybeSingle(),
-        4000
+        10000
       );
 
       if (error) throw error;
@@ -121,7 +124,7 @@ export function AuthProvider({ children }) {
       const {
         data: { session: currentSession },
         error,
-      } = await withTimeout(supabase.auth.getSession(), 4000);
+      } = await supabase.auth.getSession();
 
       if (error) throw error;
 
@@ -144,8 +147,10 @@ export function AuthProvider({ children }) {
     } catch (e) {
       console.error('bootstrapAuth error:', e);
 
+      // Un errore temporaneo durante il ripristino non equivale a un logout.
+      // Manteniamo il profilo locale e lasciamo che onAuthStateChange recuperi
+      // l'eventuale sessione persistita appena Supabase completa l'inizializzazione.
       const cachedProfile = readCachedProfile(null);
-      setSession(null);
       setProfile(cachedProfile || null);
     } finally {
       setSessionLoading(false);
@@ -158,7 +163,7 @@ export function AuthProvider({ children }) {
 
     bootstrapAuth();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 
       setSession(newSession ?? null);
@@ -173,8 +178,12 @@ export function AuthProvider({ children }) {
 
         await loadProfile(uid);
       } else {
-        clearCachedProfile();
-        setProfile(null);
+        // Cancella i dati locali soltanto quando Supabase conferma davvero il logout
+        // (o l'INITIAL_SESSION è realmente vuota), non per eventi intermedi.
+        if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
+          clearCachedProfile();
+          setProfile(null);
+        }
         setProfileLoading(false);
       }
 
